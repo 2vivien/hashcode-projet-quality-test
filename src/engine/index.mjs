@@ -59,7 +59,7 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
     findings.push(...evaluateCheck(check, result));
   }
 
-  const requirements = checks.map(check => configuredRequirements.find(r => r.id === check.id) ?? {
+  const fallbackRequirements = checks.map(check => ({
     id: check.id,
     statement: check.purpose,
     risk: check.risk,
@@ -68,7 +68,11 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
     requiredEvidence: ['exitCode'],
     scope: { category: check.category },
     expected: 0
-  });
+  }));
+  const requirements = [
+    ...configuredRequirements,
+    ...fallbackRequirements.filter(fallback => !configuredRequirements.some(requirement => requirement.id === fallback.id))
+  ];
   const proofPlans = requirements.map(requirement => planProof(requirement, {
     risk: requirement.risk,
     capabilities: { semanticEvaluator: false, differentialReference: false, strictHighRisk: config.proof?.high_risk_multi_oracle === true },
@@ -81,20 +85,22 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
     policy: { noSelfModification: config.proof?.no_self_modification !== false, evaluatorIsOutOfBand: config.proof?.evaluator_out_of_band !== false }
   });
   const runId = `run_${startedAt.replace(/[^0-9]/g, '')}_${gitSha(cwd)?.slice(0, 12) ?? 'nogit'}`;
-  const proofAssessments = checks.map((check, i) => {
-    const evidence = check.result?.evidence ? [check.result.evidence] : [];
+  const proofAssessments = requirements.map((requirement, i) => {
+    const check = checks.find(candidate => candidate.id === requirement.id);
+    const evidence = check?.result?.evidence ? [check.result.evidence] : [];
     const plan = proofPlans[i];
     const oracleResults = plan.oracles.map(oracle => evaluateOracle(oracle, {
-      actual: check.result?.exitCode,
-      expected: 0,
-      ...check.result?.evidence
+      actual: check?.result?.exitCode,
+      expected: requirement.expected ?? 0,
+      ...check?.result?.evidence
     }));
     return {
-      checkId: check.id,
+      checkId: check?.id ?? null,
+      requirementId: requirement.id,
       plan,
       receipt: buildProofReceipt({
-        requirement: requirements[i],
-        risk: check.risk,
+        requirement,
+        risk: requirement.risk,
         oraclePlan: plan.oracles,
         oracleResults,
         evidence,
