@@ -12,7 +12,7 @@ function scalar(value) {
 
 export function loadAgentConfig(cwd = process.cwd()) {
   const file = join(cwd, 'quality.yaml');
-  const defaults = { base_url: null, start_command: null, max_pages: 30, max_depth: 2, max_scenarios: 100, timeout_ms: 15000, allow_mutations: false, open_issues: false, publish_artifacts: true };
+  const defaults = { base_url: null, start_command: null, max_pages: 30, max_depth: 2, max_scenarios: 100, timeout_ms: 15000, allow_mutations: false, open_issues: false, publish_artifacts: true, authorization_fixtures: '.hashcode-quality/authorization-fixtures.json', max_state_steps: 6 };
   if (!existsSync(file)) return defaults;
   const lines = readFileSync(file, 'utf8').split(/\r?\n/);
   const start = lines.findIndex(function (line) { return /^agent:\s*$/.test(line.trim()); });

@@ -1,0 +1,87 @@
+{
+  "roles": {
+    "owner": {
+      "tokenEnv": "HASHCODE_QA_ROLE_OWNER_TOKEN"
+    },
+    "other": {
+      "tokenEnv": "HASHCODE_QA_ROLE_OTHER_TOKEN"
+    },
+    "admin": {
+      "tokenEnv": "HASHCODE_QA_ROLE_ADMIN_TOKEN"
+    }
+  },
+  "objects": {
+    "users": [
+      {
+        "id": "REPLACE_WITH_OWNER_OBJECT_ID",
+        "ownerRole": "owner"
+      },
+      {
+        "id": "REPLACE_WITH_OTHER_OBJECT_ID",
+        "ownerRole": "other"
+      }
+    ]
+  },
+  "authorization": [
+    {
+      "id": "user-owner-read",
+      "method": "GET",
+      "path": "/api/users/{id}",
+      "role": "owner",
+      "objectType": "users",
+      "objectId": "REPLACE_WITH_OWNER_OBJECT_ID",
+      "expected": "allow"
+    },
+    {
+      "id": "user-cross-owner-read",
+      "method": "GET",
+      "path": "/api/users/{id}",
+      "role": "owner",
+      "objectType": "users",
+      "objectId": "REPLACE_WITH_OTHER_OBJECT_ID",
+      "expected": "deny"
+    }
+  ],
+  "functionAuthorization": [
+    {
+      "id": "admin-endpoint-user-deny",
+      "method": "GET",
+      "path": "/api/admin/users",
+      "role": "owner",
+      "expected": "deny"
+    }
+  ],
+  "properties": [
+    {
+      "id": "user-private-fields",
+      "method": "GET",
+      "path": "/api/users/{id}",
+      "role": "owner",
+      "params": {
+        "id": "REPLACE_WITH_OWNER_OBJECT_ID"
+      },
+      "forbiddenProperties": [
+        "password",
+        "passwordHash",
+        "refreshToken",
+        "secret"
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "id": "read-user-flow",
+      "maxSteps": 3,
+      "steps": [
+        {
+          "method": "GET",
+          "path": "/api/users/{id}",
+          "role": "owner",
+          "params": {
+            "id": "REPLACE_WITH_OWNER_OBJECT_ID"
+          }
+        }
+      ]
+    }
+  ]
+}

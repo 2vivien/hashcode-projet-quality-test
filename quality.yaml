@@ -177,3 +177,5 @@ agent:
   open_issues: false
   publish_artifacts: true
   screenshot_all: false
+  authorization_fixtures: .hashcode-quality/authorization-fixtures.json
+  max_state_steps: 6

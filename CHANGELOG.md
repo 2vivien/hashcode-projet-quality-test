@@ -1,3 +1,23 @@
+## [3.2.0] - 2026-09-28
+
+### Added
+- Role credential and ownership fixture system.
+- Automatic owner/cross-owner authorization matrices.
+- BOLA object-level authorization checks.
+- Function-level authorization checks.
+- Object property-level authorization checks.
+- Stateful API workflow planning and execution.
+- Role-aware state-machine requests.
+- Dual-oracle authorization proof receipts.
+- Exact status-set/range oracle support.
+- Secret redaction in API, authorization and state-machine evidence.
+- Screenshot and Playwright trace publication for GitHub findings.
+- Authorization and state-machine CI syntax coverage.
+
+### Security
+- Test credentials remain environment-based and are not written to reports.
+- Mutation methods remain disabled by default.
+- Critical authorization proofs require independent oracle types.
 ## [3.1.0] - 2026-09-28
 
 ### Added

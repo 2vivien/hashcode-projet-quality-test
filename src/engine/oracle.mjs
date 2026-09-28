@@ -35,7 +35,12 @@ export function evaluateOracle(oracle, observation = {}) {
 
   switch (oracle.type) {
     case ORACLE_TYPES.EXACT: {
-      const pass = normalize(observation.actual) === normalize(observation.expected);
+      const expected = observation.expected;
+      const pass = Array.isArray(expected)
+        ? expected.some(value => normalize(observation.actual) === normalize(value))
+        : expected && typeof expected === 'object' && Number.isFinite(Number(expected.min)) && Number.isFinite(Number(expected.max))
+          ? Number(observation.actual) >= Number(expected.min) && Number(observation.actual) <= Number(expected.max)
+          : normalize(observation.actual) === normalize(expected);
       return { verdict: pass ? 'PASS' : 'FAIL', confidence: 1, reason: pass ? 'Exact oracle matched.' : 'Actual value differs from expected value.' };
     }
     case ORACLE_TYPES.STRUCTURAL: {

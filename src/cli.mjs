@@ -45,7 +45,9 @@ async function agent() {
     openIssues: args.includes('--open-issues') || cfg.open_issues === true,
     publishArtifacts: !args.includes('--no-publish-artifacts') && cfg.publish_artifacts !== false,
     githubRepo: argValue('--repo', gitRepository()),
-    githubBranch: argValue('--branch', 'main')
+    githubBranch: argValue('--branch', 'main'),
+    authorizationFixtures: argValue('--authorization-fixtures', cfg.authorization_fixtures),
+    maxStateSteps: Number(argValue('--max-state-steps', cfg.max_state_steps))
   });
   say(json ? result : 'HASHCODE AUTONOMOUS QA\\nRun: ' + result.runId + '\\nRoutes: ' + result.surface.routes.length + '\\nAPI operations: ' + (result.surface.openapi.length + result.surface.apiRoutes.length) + '\\nScenarios: ' + result.scenarios.length + '\\nPages explored: ' + (result.browser.pages || []).length + '\\nFindings: ' + result.findings.length + '\\nArtifacts: ' + result.artifactDir + '\\nIssues: ' + (result.issues ? result.issues.issues.length : 'not requested'));
   process.exitCode = result.findings.some(function (f) { return ['HIGH','CRITICAL'].includes(f.severity); }) ? 1 : 0;
@@ -186,7 +188,7 @@ Usage:
   npx hashcode-quality audit [--json]
   npx hashcode-quality check --profile minimal|standard|production|ai [--json]
   npx hashcode-quality check --changed-file=src/foo.ts
-  npx hashcode-quality agent --base-url=http://localhost:3000 [--start-command='npm run dev'] [--open-issues]
+  npx hashcode-quality agent --base-url=http://localhost:3000 [--start-command='npm run dev'] [--authorization-fixtures=.hashcode-quality/authorization-fixtures.json] [--open-issues]
   npx hashcode-quality qa-agent --base-url=http://localhost:3000
   npx hashcode-quality prompt [prompt-file.md]
   npx hashcode-quality prove [--json]
