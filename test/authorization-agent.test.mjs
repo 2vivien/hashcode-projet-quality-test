@@ -6,7 +6,7 @@ test('authorization matrix creates owner and cross-owner cases', () => {
   const matrix = buildAuthorizationMatrix({
     endpoints: [{ method: 'GET', path: '/api/users/{id}' }],
     fixtures: {
-      roles: { owner: {}, other: {} },
+      roles: [{ name: 'owner' }, { name: 'other' }],
       objects: { users: [{ id: '1', ownerRole: 'owner' }] },
       authorization: []
     }
