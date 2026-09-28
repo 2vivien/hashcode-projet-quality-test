@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 
 const DEFAULT_PATH = '.hashcode-quality/authorization-fixtures.json';
 
