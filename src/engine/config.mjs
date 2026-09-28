@@ -4,7 +4,8 @@ import { join } from 'node:path';
 const defaults = {
   policies: { require_evidence_for_confirmed: true, no_test_result_without_execution: true, require_regression_test_for_confirmed_bug: true, no_auto_delete_from_static_signal: true },
   budgets: { max_checks: 50, max_duration_ms: 15 * 60 * 1000 },
-  requirements: []
+  requirements: [],
+  proof: { strict_critical: true, high_risk_multi_oracle: false, judge_repetitions: 3, no_self_modification: true, evaluator_out_of_band: true }
 };
 
 function scalar(value) {
@@ -61,6 +62,7 @@ export function loadQualityConfig(cwd = process.cwd()) {
     if (!m) continue;
     const value = scalar(m[2]);
     if (m[1] in config.policies) config.policies[m[1]] = value;
+    if (m[1] in config.proof) config.proof[m[1]] = value;
   }
   config.requirements = parseRequirements(raw);
   return config;
