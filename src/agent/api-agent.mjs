@@ -1,5 +1,6 @@
 function resolvePath(path) {
-  return path.replace(/\{([^}]+)\}/g, function (_, name) {
+  return path.replace(/\{([^}]+)\}|:([a-zA-Z_][a-zA-Z0-9_]*)/g, function (_, braceName, colonName) {
+    const name = braceName || colonName;
     return /id|uuid/i.test(name) ? '00000000-0000-0000-0000-000000000001' : 'test';
   });
 }
