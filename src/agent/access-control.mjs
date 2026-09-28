@@ -18,6 +18,7 @@ export async function runFunctionAuthorization({ baseUrl, cases = [], fixtures =
     const headers = resolveRoleHeaders(testCase.role, fixtures);
     if (headers == null && testCase.role !== 'anonymous') {
       results.push({ ...testCase, status: 'MISSING_CREDENTIAL' });
+      findings.push({ type: 'AUTHORIZATION_TEST_BLOCKED', severity: 'MEDIUM', title: 'Missing test credential for role: ' + testCase.role, summary: 'The function authorization case could not execute because the role credential is unavailable.', evidence: { role: testCase.role, caseId: testCase.id } });
       continue;
     }
     const url = new URL(materialize(testCase.path, testCase.params), baseUrl).href;
@@ -64,6 +65,7 @@ export async function runPropertyAuthorization({ baseUrl, cases = [], fixtures =
     const headers = resolveRoleHeaders(testCase.role, fixtures);
     if (headers == null && testCase.role !== 'anonymous') {
       results.push({ ...testCase, status: 'MISSING_CREDENTIAL' });
+      findings.push({ type: 'AUTHORIZATION_TEST_BLOCKED', severity: 'MEDIUM', title: 'Missing test credential for role: ' + testCase.role, summary: 'The property authorization case could not execute because the role credential is unavailable.', evidence: { role: testCase.role, caseId: testCase.id } });
       continue;
     }
     const url = new URL(materialize(testCase.path, testCase.params), baseUrl).href;
