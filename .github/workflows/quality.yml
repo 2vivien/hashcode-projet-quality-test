@@ -49,6 +49,7 @@ jobs:
           node --check src/agent/api-agent.mjs
           node --check src/agent/github-reporter.mjs
           node --check src/agent/index.mjs
+          node --check src/agent/config.mjs
       - name: Engine unit tests
         run: npm test
       - name: CLI smoke test
