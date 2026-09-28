@@ -86,7 +86,7 @@ export function generateProofPlan({ requirement, risk = 'MEDIUM', capabilities =
   const highRisk = ['HIGH', 'CRITICAL'].includes(String(risk).toUpperCase());
 
   if (requirement?.expected !== undefined) {
-    plans.push(createOracle({ type: ORACLE_TYPES.EXACT, criterion: 'actual equals expected', evidenceRequired: ['actual', 'expected'] }));
+    plans.push(createOracle({ type: ORACLE_TYPES.EXACT, criterion: 'actual equals expected', evidenceRequired: ['exitCode'] }));
   }
   if (requirement?.schema) {
     plans.push(createOracle({ type: ORACLE_TYPES.SCHEMA, criterion: 'output satisfies schema', evidenceRequired: ['schemaValid'] }));
