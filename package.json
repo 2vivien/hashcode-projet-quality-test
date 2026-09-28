@@ -53,7 +53,12 @@
     "prompt": "node ./src/cli.mjs prompt",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "node --test"
+    "test": "node --test",
+    "prove": "node ./src/cli.mjs prove",
+    "eval": "node ./src/cli.mjs eval",
+    "evidence": "node ./src/cli.mjs evidence",
+    "regressions": "node ./src/cli.mjs regressions",
+    "explain-proof": "node ./src/cli.mjs explain-proof"
   },
   "devDependencies": {
     "prettier": "latest"
