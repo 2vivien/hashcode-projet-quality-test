@@ -91,8 +91,60 @@ Final quality gate
 | `audit` | Recommends quality controls for the detected stack |
 | `check` | Runs the project's available quality scripts |
 | `prompt` | Prints a bundled HashCode quality-engineering prompt |
+| `prove` | Explains proof receipts from the latest run |
+| `eval` | Reviews the latest evaluation/proof result |
+| `evidence` | Lists execution evidence captured by the engine |
+| `regressions` | Lists generated regression cases |
+| `explain-proof` | Shows the auditable proof explanation |
 
 Machine-readable output is available with `--json` for supported commands.
+
+## Proof Engine
+
+HashCode Quality separates **execution success** from **proof**:
+
+```text
+PASS       = the execution did not violate the selected oracle
+PROVEN     = the declared requirement was established by its oracle(s)
+             using the required evidence, within the declared scope
+```
+
+Every proof receipt records the requirement, risk, oracle definitions, execution, evidence, evaluator verdicts, confidence, reproducibility gaps and proof hash. High-risk/critical proof can require independent proof signals. An evaluator, including an LLM judge, is treated as evidence with uncertainty rather than as ground truth.
+
+The proof graph connects:
+
+```text
+Requirement
+  ├── Acceptance Criteria
+  ├── Invariants
+  └── Risk
+        ↓
+      Oracle
+        ↓
+      Dataset
+        ↓
+     Execution
+        ↓
+      Evidence
+        ↓
+    Evaluation
+        ↓
+       Proof
+        ↓
+    Regression
+        ↓
+       Gate
+```
+
+Inspect the latest run with:
+
+```bash
+npx hashcode-quality check --profile standard
+npx hashcode-quality prove
+npx hashcode-quality evidence
+npx hashcode-quality regressions
+npx hashcode-quality explain-proof --json
+```
 
 ## Profiles
 
