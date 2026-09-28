@@ -14,21 +14,21 @@ function walk(dir, out = []) {
 }
 
 function nextRoute(file, cwd) {
-  const rel = relative(cwd, file).replaceAll('\\\\', '/');
-  const app = rel.match(/(?:^|\\/)app\\/(.*)\\/(?:page|route)\\.(?:tsx?|jsx?|mjs|cjs)$/) || rel.match(/(?:^|\\/)app\\/(page|route)\\.(?:tsx?|jsx?|mjs|cjs)$/);
+  const rel = relative(cwd, file).replaceAll('\\', '/');
+  const app = rel.match(/(?:^|\/)app\/(.*)\/(?:page|route)\.(?:tsx?|jsx?|mjs|cjs)$/) || rel.match(/(?:^|\/)app\/(page|route)\.(?:tsx?|jsx?|mjs|cjs)$/);
   if (app) {
     const raw = app[1] || '';
     if (raw === 'page' || raw === 'route') return '/';
-    const segments = raw.split('/').filter(Boolean).filter(function (s) { return !/^\\(.+\\)$/.test(s); });
+    const segments = raw.split('/').filter(Boolean).filter(function (s) { return !/^\(.+\)$/.test(s); });
     return '/' + segments.map(function (s) {
       if (s.startsWith('[...') && s.endsWith(']')) return '*' + s.slice(4, -1);
       if (s.startsWith('[') && s.endsWith(']')) return ':' + s.slice(1, -1);
       return s;
     }).join('/');
   }
-  const pages = rel.match(/(?:^|\\/)pages\\/(.*)\\.(?:tsx?|jsx?|mjs|cjs)$/);
+  const pages = rel.match(/(?:^|\/)pages\/(.*)\.(?:tsx?|jsx?|mjs|cjs)$/);
   if (pages && !pages[1].startsWith('_') && !pages[1].startsWith('api/')) {
-    const raw = pages[1].replace(/\\/index$/, '').replace(/^index$/, '');
+    const raw = pages[1].replace(/\/index$/, '').replace(/^index$/, '');
     return '/' + raw.split('/').filter(Boolean).map(function (s) {
       return s.startsWith('[') && s.endsWith(']') ? ':' + s.slice(1, -1) : s;
     }).join('/');
@@ -37,17 +37,17 @@ function nextRoute(file, cwd) {
 }
 
 function apiRoute(file, cwd) {
-  const rel = relative(cwd, file).replaceAll('\\\\', '/');
-  const m = rel.match(/(?:^|\\/)pages\\/(api\\/.*)\\.(?:tsx?|jsx?|mjs|cjs)$/) || rel.match(/(?:^|\\/)app\\/(api\\/.*?)(?:\\/route)?\\.(?:tsx?|jsx?|mjs|cjs)$/);
-  return m ? '/' + m[1].replace(/\\/route$/, '').replace(/\\/index$/, '') : null;
+  const rel = relative(cwd, file).replaceAll('\\', '/');
+  const m = rel.match(/(?:^|\/)pages\/(api\/.*)\.(?:tsx?|jsx?|mjs|cjs)$/) || rel.match(/(?:^|\/)app\/(api\/.*?)(?:\/route)?\.(?:tsx?|jsx?|mjs|cjs)$/);
+  return m ? '/' + m[1].replace(/\/route$/, '').replace(/\/index$/, '') : null;
 }
 
 function methodsFromSource(content) {
-  return [...new Set([...content.matchAll(/export\\s+(?:async\\s+)?function\\s+(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\\b/g)].map(function (m) { return m[1]; }))];
+  return [...new Set([...content.matchAll(/export\s+(?:async\s+)?function\s+(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\b/g)].map(function (m) { return m[1]; }))];
 }
 
 function discoverOpenApi(cwd, files) {
-  const candidates = files.filter(function (f) { return /(?:^|\\/)openapi\\.(?:ya?ml|json)$/i.test(relative(cwd, f)); });
+  const candidates = files.filter(function (f) { return /(?:^|\/)openapi\.(?:ya?ml|json)$/i.test(relative(cwd, f)); });
   const specs = [];
   for (const file of candidates) {
     const raw = readFileSync(file, 'utf8');
@@ -63,9 +63,9 @@ function discoverOpenApi(cwd, files) {
     } catch {
       let current = null;
       for (const line of raw.split(/\r?\n/)) {
-        const pm = line.match(/^\\s{2}([^\\s][^:]*):\\s*$/);
+        const pm = line.match(/^\s{2}([^\s][^:]*):\s*$/);
         if (pm && pm[1].startsWith('/')) current = pm[1];
-        const mm = line.match(/^\\s{4,}(get|post|put|patch|delete|head|options):\\s*$/i);
+        const mm = line.match(/^\s{4,}(get|post|put|patch|delete|head|options):\s*$/i);
         if (mm && current) specs.push({ source: relative(cwd, file), path: current, method: mm[1].toUpperCase(), operationId: null, summary: null, tags: [], security: null });
       }
     }
@@ -74,9 +74,10 @@ function discoverOpenApi(cwd, files) {
 }
 
 function discoverTestedRoutes(cwd, files) {
-  const tests = files.filter(function (f) { return /(?:test|spec|e2e)\\.(?:ts|tsx|js|jsx|mjs|cjs)$|(?:^|\\/)(?:tests?|e2e)\\//i.test(relative(cwd, f)); });
-  const text = tests.map(function (f) { return readFileSync(f, 'utf8'); }).join('\\n');
-  return { files: tests.map(function (f) { return relative(cwd, f); }), routes: [...text.matchAll(/['\"`]\\/(?:[a-zA-Z0-9:_*.-]+(?:\\/[a-zA-Z0-9:_*.-]+)*)?['\"`]/g)].map(function (m) { return m[0].slice(1, -1); }) };
+  const tests = files.filter(function (f) { return /(?:test|spec|e2e)\.(?:ts|tsx|js|jsx|mjs|cjs)$|(?:^|\/)(?:tests?|e2e)\//i.test(relative(cwd, f)); });
+  const text = tests.map(function (f) { return readFileSync(f, 'utf8'); }).join('\n');
+  const routes = [...text.matchAll(/['"]\/(?:[a-zA-Z0-9:_*.-]+(?:\/[a-zA-Z0-9:_*.-]+)*)?['"]/g)].map(function (m) { return m[0].slice(1, -1); });
+  return { files: tests.map(function (f) { return relative(cwd, f); }), routes };
 }
 
 export function discoverApplicationSurface(cwd = process.cwd()) {
@@ -96,23 +97,15 @@ export function discoverApplicationSurface(cwd = process.cwd()) {
   const tested = discoverTestedRoutes(cwd, files);
   const coveredRoutes = uniqueRoutes.filter(function (r) { return tested.routes.includes(r.path); }).map(function (r) { return r.path; });
   const uncoveredRoutes = uniqueRoutes.filter(function (r) { return !tested.routes.includes(r.path); }).map(function (r) { return r.path; });
-  return {
-    routes: uniqueRoutes,
-    coveredRoutes,
-    uncoveredRoutes,
-    testFiles: tested.files,
-    apiRoutes: [...new Map(apis.map(function (x) { return [x.method + ':' + x.path, x]; })).values()],
-    openapi: discoverOpenApi(cwd, files),
-    filesScanned: files.length
-  };
+  return { routes: uniqueRoutes, coveredRoutes, uncoveredRoutes, testFiles: tested.files, apiRoutes: [...new Map(apis.map(function (x) { return [x.method + ':' + x.path, x]; })).values()], openapi: discoverOpenApi(cwd, files), filesScanned: files.length };
 }
 
 export function inferRoles(cwd = process.cwd()) {
-  const files = walk(cwd).filter(function (f) { return /\\.(?:ts|tsx|js|jsx|mjs|cjs)$/.test(f); });
+  const files = walk(cwd).filter(function (f) { return /\.(?:ts|tsx|js|jsx|mjs|cjs)$/.test(f); });
   const hits = new Map();
   for (const file of files) {
     const text = readFileSync(file, 'utf8');
-    for (const match of text.matchAll(/\\b(?:role|roles|permissions?|authorize|authorization)\\b[^\\n]{0,120}?\\b(admin|administrator|manager|gerant|seller|vendeur|editor|moderator|teacher|student|parent|user|member|support)\\b/gi)) {
+    for (const match of text.matchAll(/\b(?:role|roles|permissions?|authorize|authorization)\b[^\n]{0,120}?\b(admin|administrator|manager|gerant|seller|vendeur|editor|moderator|teacher|student|parent|user|member|support)\b/gi)) {
       const role = match[1].toLowerCase();
       hits.set(role, (hits.get(role) || 0) + 1);
     }
