@@ -16,7 +16,7 @@ export function generateScenarios({ surface, roles = [], max = 100, allowMutatio
     const mutation = /^(POST|PUT|PATCH|DELETE)$/.test(endpoint.method);
     if (mutation && !allowMutations) continue;
     scenarios.push({ id: 'api-' + hash({ endpoint, role: 'anonymous' }), kind: 'api_contract', risk: mutation ? 'HIGH' : 'MEDIUM', path: endpoint.path, method: endpoint.method, role: 'anonymous' });
-    if (/\\{[^}]+\\}/.test(endpoint.path)) scenarios.push({ id: 'api-' + hash({ endpoint, type: 'object-access' }), kind: 'authorization_object', risk: 'CRITICAL', path: endpoint.path, method: endpoint.method, role: 'anonymous', security: 'BOLA' });
+    if (/\{[^}]+\}/.test(endpoint.path)) scenarios.push({ id: 'api-' + hash({ endpoint, type: 'object-access' }), kind: 'authorization_object', risk: 'CRITICAL', path: endpoint.path, method: endpoint.method, role: 'anonymous', security: 'BOLA' });
   }
   for (const roleItem of roles) {
     const role = roleItem.role || roleItem;
