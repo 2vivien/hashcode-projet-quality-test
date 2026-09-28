@@ -7,6 +7,11 @@ function hash(value) {
   return createHash('sha256').update(JSON.stringify(value ?? null)).digest('hex');
 }
 
+function expectedStatus(testCase) {
+  if (testCase.expected === 'deny') return testCase.expectedStatus || [401, 403];
+  return testCase.expectedStatus || { min: 200, max: 299 };
+}
+
 export function buildAuthorizationProof({ testCase, observation, gitSha = null, runId = null } = {}) {
   const expected = testCase.expected === 'deny' ? 'deny' : 'allow';
   const requirement = {
@@ -20,13 +25,29 @@ export function buildAuthorizationProof({ testCase, observation, gitSha = null, 
     invariants: ['authorization policy matches observed HTTP response'],
     scope: { method: testCase.method, path: testCase.path, role: testCase.role, objectId: testCase.objectId }
   };
-  const oracle = createOracle({
+
+  const statusOracle = createOracle({
+    type: 'EXACT',
+    criterion: 'HTTP status satisfies the authorization expectation',
+    evidenceRequired: ['status'],
+    parameters: { expected: expectedStatus(testCase) }
+  });
+  const invariantOracle = createOracle({
     type: 'INVARIANT',
     criterion: expected === 'deny' ? 'foreign object access is denied' : 'owned object access is allowed',
     evidenceRequired: ['invariantValid'],
     parameters: { expected }
   });
-  const result = evaluateOracle(oracle, { invariantValid: observation.passed === true });
+
+  const statusResult = evaluateOracle(statusOracle, {
+    actual: observation.status,
+    expected: expectedStatus(testCase),
+    status: observation.status
+  });
+  const invariantResult = evaluateOracle(invariantOracle, {
+    invariantValid: observation.passed === true
+  });
+
   const evidence = [createEvidence({
     command: testCase.method + ' ' + testCase.path,
     cwd: process.cwd(),
@@ -40,24 +61,33 @@ export function buildAuthorizationProof({ testCase, observation, gitSha = null, 
       authorizationRole: testCase.role,
       objectId: testCase.objectId,
       expected,
+      expectedStatus: expectedStatus(testCase),
       observedStatus: observation.status
     }
   })];
+
   const receipt = buildProofReceipt({
     requirement,
     risk: requirement.risk,
-    oraclePlan: [oracle],
-    oracleResults: [result],
+    oraclePlan: [statusOracle, invariantOracle],
+    oracleResults: [statusResult, invariantResult],
     evidence,
     gitSha,
     runId,
-    proofPolicy: requirement.risk === 'CRITICAL' ? 'multi_oracle_required' : 'deterministic_first'
+    proofPolicy: 'multi_oracle_required'
   });
-  return { requirement, oracle, result, evidence, receipt };
+
+  return {
+    requirement,
+    oracle: [statusOracle, invariantOracle],
+    result: [statusResult, invariantResult],
+    evidence,
+    receipt
+  };
 }
 
 export function buildAuthorizationProofSet({ cases = [], gitSha = null, runId = null } = {}) {
   return cases
-    .filter(item => item.status >= 100 && item.status <= 599 && item.passed != null)
+    .filter(item => Number.isInteger(item.status) && item.passed != null)
     .map(item => buildAuthorizationProof({ testCase: item, observation: item, gitSha, runId }));
 }
