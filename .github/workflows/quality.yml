@@ -51,6 +51,8 @@ jobs:
           node src/cli.mjs doctor --json
           node src/cli.mjs audit --json
           node src/cli.mjs check --profile minimal --json
+          node src/cli.mjs prove --json
+          node src/cli.mjs verify --json
       - name: Package dry run
         run: npm pack --dry-run
       - name: Dependency audit
