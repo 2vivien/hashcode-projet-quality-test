@@ -70,7 +70,7 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
     expected: 0
   });
   const proofPlans = requirements.map(requirement => planProof(requirement, {
-    risk: check.risk,
+    risk: requirement.risk,
     capabilities: { semanticEvaluator: false, differentialReference: false }
   }));
   const harness = createFrozenHarness({
