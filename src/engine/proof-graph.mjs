@@ -6,15 +6,17 @@ function hashGraph(graph) {
 }
 
 export const PROOF_NODE_TYPES = Object.freeze({
-  REQUIREMENT: 'requirement', ACCEPTANCE_CRITERION: 'acceptance_criterion', INVARIANT: 'invariant', RISK: 'risk', ORACLE: 'oracle', DATASET: 'dataset', EXECUTION: 'execution', EVIDENCE: 'evidence', EVALUATION: 'evaluation', PROOF: 'proof', REGRESSION: 'regression', GATE: 'gate'
+  REQUIREMENT: 'requirement', ACCEPTANCE_CRITERION: 'acceptance_criterion', INVARIANT: 'invariant', RISK: 'risk', ORACLE: 'oracle', DATASET: 'dataset', HARNESS: 'harness', EXECUTION: 'execution', EVIDENCE: 'evidence', EVALUATION: 'evaluation', PROOF: 'proof', REGRESSION: 'regression', GATE: 'gate'
 });
 
-export function buildProofGraph({ checks = [], proofAssessments = [], requirements = [], findings = [], gate = null, gitSha = null } = {}) {
+export function buildProofGraph({ checks = [], proofAssessments = [], requirements = [], findings = [], gate = null, gitSha = null, harness = null } = {}) {
   const nodes = [];
   const edges = [];
   const nodeIds = new Set();
   const addNode = (id, type, data = {}) => { if (!nodeIds.has(id)) { nodes.push({ id, type, data }); nodeIds.add(id); } };
   const addEdge = (from, to, relation) => edges.push({ from, to, relation });
+
+  if (harness) addNode('harness:evaluation', PROOF_NODE_TYPES.HARNESS, { id: harness.id, version: harness.version, hash: harness.harnessHash, frozen: harness.frozen });
 
   for (const requirement of requirements) {
     const rid = `requirement:${requirement.id}`;
@@ -48,6 +50,7 @@ export function buildProofGraph({ checks = [], proofAssessments = [], requiremen
       const result = assessment.receipt?.oracles?.[i];
       addNode(oracleId, PROOF_NODE_TYPES.ORACLE, { type: oracle.type, criterion: oracle.criterion, evaluator: oracle.evaluator, evidenceRequired: oracle.evidenceRequired ?? [] });
       addEdge(riskId, oracleId, 'tested_by');
+      if (harness) addEdge('harness:evaluation', oracleId, 'defines');
       if (assessment.dataset) {
         const datasetId = `dataset:${assessment.dataset.id}`;
         addNode(datasetId, PROOF_NODE_TYPES.DATASET, assessment.dataset);
