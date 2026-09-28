@@ -14,6 +14,7 @@ import { buildProofGraph } from './proof-graph.mjs';
 import { explainProof } from './proof-ledger.mjs';
 import { loadRequirements } from './requirements.mjs';
 import { createFrozenHarness } from './harness.mjs';
+import { buildRegressionPlan } from './regression.mjs';
 
 function gitSha(cwd) {
   const r = spawnSync('git', ['rev-parse', 'HEAD'], { cwd, encoding: 'utf8' });
@@ -69,7 +70,7 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
   });
   const proofPlans = requirements.map(requirement => planProof(requirement, {
     risk: check.risk,
-    capabilities: { semanticEvaluator: false }
+    capabilities: { semanticEvaluator: false, differentialReference: false }
   }));
   const harness = createFrozenHarness({
     id: `run-${startedAt}`,
@@ -100,15 +101,16 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
       })
     };
   });
-  const gate = buildGate({ checks, findings, profile });
+  const regressionPlan = buildRegressionPlan({ findings, requirements });
+  const gate = buildGate({ checks, findings, proofAssessments, profile });
   const proofGraph = buildProofGraph({ checks, proofAssessments, requirements, findings, gate, gitSha: gitSha(cwd) });
   const finishedAt = new Date().toISOString();
   const result = {
-    engineVersion: '2.2.0-gold',
+    engineVersion: '3.0.0-gold',
     startedAt, finishedAt, runId, gitSha: gitSha(cwd),
     project: { ...project, stack, inferredRisk: inferRisk(project) },
     plan: { selected: plan.checks.map(x => x.id), totalAvailable: initialPlan.checks.length, gaps: plan.gaps },
-    checks, findings, requirements, proofAssessments, proofGraph, harness, gate,
+    checks, findings, requirements, proofAssessments, proofGraph, harness, regressionPlan, gate,
     intelligence: {
       traceability: 'requirement -> risk -> oracle -> execution -> evidence -> evaluation -> proof -> regression -> gate',
       proofGraphHash: proofGraph.graphHash ?? null,
