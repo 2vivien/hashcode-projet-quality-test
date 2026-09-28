@@ -7,6 +7,7 @@ import { loadQualityConfig } from './config.mjs';
 import { buildPlan, selectChecks } from './planner.mjs';
 import { runCheck } from './runner.mjs';
 import { evaluateCheck, buildGate } from './evaluate.mjs';
+import { planProof } from './proof.mjs';
 
 function gitSha(cwd) {
   const r = spawnSync('git', ['rev-parse', 'HEAD'], { cwd, encoding: 'utf8' });
@@ -49,6 +50,19 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
     findings.push(...evaluateCheck(check, result));
   }
 
+  const proofPlans = checks.map(check => planProof({
+    statement: check.purpose,
+    requiredEvidence: ['exitCode']
+  }, {
+    risk: check.risk,
+    capabilities: { semanticEvaluator: profile === 'ai' }
+  }));
+  const proofAssessments = checks.map((check, i) => ({
+    checkId: check.id,
+    plan: proofPlans[i],
+    status: check.result?.status === 'PASS' ? 'PROVEN' : check.result?.status === 'FAIL' ? 'NOT_PROVEN' : 'INSUFFICIENT_PROOF',
+    evidence: check.result?.evidence ? [{ keys: ['exitCode', 'stdout', 'stderr', 'durationMs'] }] : []
+  }));
   const gate = buildGate({ checks, findings, profile });
   const finishedAt = new Date().toISOString();
   const result = {
@@ -56,7 +70,7 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
     startedAt, finishedAt, gitSha: gitSha(cwd),
     project: { ...project, stack, inferredRisk: inferRisk(project) },
     plan: { selected: plan.checks.map(x => x.id), totalAvailable: initialPlan.checks.length, gaps: plan.gaps },
-    checks, findings, gate,
+    checks, findings, proofAssessments, gate,
     intelligence: {
       traceability: 'discovery -> risk -> plan -> execution -> evidence -> evaluation -> gate',
       regression: findings.filter(f => f.kind === 'CONFIRMED_DEFECT').map(f => ({ findingId: f.id, tests: f.regressionTests })),
