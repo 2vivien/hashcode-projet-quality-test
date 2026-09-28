@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { detectStack, PROFILES } from './index.mjs';
 import { executeQuality, loadPrompt, explainRunProof } from './engine/index.mjs';
+import { verifyPersistedRun } from './engine/run-integrity.mjs';
 
 const cwd = process.cwd();
 const args = process.argv.slice(2);
@@ -92,7 +93,9 @@ function latestRun() {
 function prove() {
   const run = latestRun();
   if (!run) { console.error('Aucun run disponible. Lancez d’abord: hashcode-quality check'); process.exitCode = 2; return; }
-  const data = { runId: run.runId, gitSha: run.gitSha, proofGraphHash: run.proofGraph?.graphHash ?? null, harnessHash: run.harness?.harnessHash ?? null, summary: run.intelligence?.proofSummary ?? null, proofs: explainRunProof(run) };
+  const integrity = verifyPersistedRun(run);
+  const data = { runId: run.runId, gitSha: run.gitSha, proofGraphHash: run.proofGraph?.graphHash ?? null, harnessHash: run.harness?.harnessHash ?? null, summary: run.intelligence?.proofSummary ?? null, integrity, proofs: explainRunProof(run) };
+  if (!integrity.valid) { say(json ? data : `HASHCODE PROOF INTEGRITY FAILURE\n${JSON.stringify(integrity, null, 2)}`); process.exitCode = 1; return; }
   say(json ? data : `HASHCODE PROOF\nRun: ${data.runId}\nGit SHA: ${data.gitSha ?? 'unknown'}\nProof graph: ${data.proofGraphHash ?? 'none'}\nHarness: ${data.harnessHash ?? 'none'}\n\n${data.proofs.map(p => `- ${p.checkId}: ${p.status} — ${p.why}`).join('\n')}`);
   process.exitCode = data.proofs.some(p => ['NOT_PROVEN','INSUFFICIENT_PROOF'].includes(p.status)) ? 1 : 0;
 }
