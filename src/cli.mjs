@@ -7,6 +7,7 @@ import { detectStack, PROFILES } from './index.mjs';
 import { executeQuality, loadPrompt, explainRunProof } from './engine/index.mjs';
 import { verifyPersistedRun } from './engine/run-integrity.mjs';
 import { runAutonomousQA } from './agent/index.mjs';
+import { loadAgentConfig } from './agent/config.mjs';
 
 const cwd = process.cwd();
 const args = process.argv.slice(2);
@@ -31,17 +32,18 @@ function gitRepository() {
   return match ? match[1] : null;
 }
 async function agent() {
-  const baseUrl = argValue('--base-url', process.env.HASHCODE_QA_BASE_URL || null);
-  const startCommand = argValue('--start-command', process.env.HASHCODE_QA_START_COMMAND || null);
+  const cfg = loadAgentConfig(cwd);
+  const baseUrl = argValue('--base-url', process.env.HASHCODE_QA_BASE_URL || cfg.base_url);
+  const startCommand = argValue('--start-command', process.env.HASHCODE_QA_START_COMMAND || cfg.start_command);
   const result = await runAutonomousQA({
     cwd, baseUrl, startCommand,
-    maxPages: Number(argValue('--max-pages', 30)),
-    maxDepth: Number(argValue('--max-depth', 2)),
-    maxScenarios: Number(argValue('--max-scenarios', 100)),
-    timeoutMs: Number(argValue('--timeout', 15000)),
-    allowMutations: args.includes('--allow-mutations'),
-    openIssues: args.includes('--open-issues'),
-    publishArtifacts: !args.includes('--no-publish-artifacts'),
+    maxPages: Number(argValue('--max-pages', cfg.max_pages)),
+    maxDepth: Number(argValue('--max-depth', cfg.max_depth)),
+    maxScenarios: Number(argValue('--max-scenarios', cfg.max_scenarios)),
+    timeoutMs: Number(argValue('--timeout', cfg.timeout_ms)),
+    allowMutations: args.includes('--allow-mutations') || cfg.allow_mutations === true,
+    openIssues: args.includes('--open-issues') || cfg.open_issues === true,
+    publishArtifacts: !args.includes('--no-publish-artifacts') && cfg.publish_artifacts !== false,
     githubRepo: argValue('--repo', gitRepository()),
     githubBranch: argValue('--branch', 'main')
   });
