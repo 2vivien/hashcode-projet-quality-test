@@ -91,9 +91,10 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
     startedAt, finishedAt, gitSha: gitSha(cwd),
     project: { ...project, stack, inferredRisk: inferRisk(project) },
     plan: { selected: plan.checks.map(x => x.id), totalAvailable: initialPlan.checks.length, gaps: plan.gaps },
-    checks, findings, proofAssessments, gate,
+    checks, findings, proofAssessments, proofGraph, gate,
     intelligence: {
-      traceability: 'requirement -> risk -> oracle -> execution -> evidence -> evaluation -> proof -> gate',
+      traceability: 'requirement -> risk -> oracle -> execution -> evidence -> evaluation -> proof -> regression -> gate',
+      proofGraphHash: proofGraph.graphHash ?? null,
       regression: findings.filter(f => f.kind === 'CONFIRMED_DEFECT').map(f => ({ findingId: f.id, tests: f.regressionTests })),
       evidenceComplete: checks.every(c => Boolean(c.result?.evidence)),
       proofSummary: {
