@@ -11,7 +11,10 @@ function scalar(value) {
   const v = value.trim();
   if (v === 'true') return true;
   if (v === 'false') return false;
-  if (/^\d+$/.test(v)) return Number(v);
+  if (/^\d+(\.\d+)?$/.test(v)) return Number(v);
+  if ((v.startsWith('{') && v.endsWith('}')) || (v.startsWith('[') && v.endsWith(']'))) {
+    try { return JSON.parse(v); } catch { return v; }
+  }
   if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) return v.slice(1, -1);
   return v;
 }
