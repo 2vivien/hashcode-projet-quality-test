@@ -21,7 +21,7 @@ export function runCommand({ command, args = [], cwd = process.cwd(), timeoutMs 
     child.stderr?.on('data', d => { stderr += d; });
     child.on('error', error => {
       clearTimeout(timer);
-      const evidence = createEvidence({ command: commandString(command, args), cwd, exitCode: null, stdout, stderr: `${stderr}\\n${error.message}`, durationMs: Date.now() - started, meta: { timedOut } });
+      const evidence = createEvidence({ command: commandString(command, args), cwd, exitCode: null, stdout, stderr: `${stderr}\\n${error.message}`, durationMs: Date.now() - started, meta: { timedOut, nodeVersion: process.version, platform: process.platform, arch: process.arch } });
       resolve({ status: RESULT_STATUS.BLOCKED, exitCode: null, stdout, stderr: evidence.stderr, durationMs: evidence.durationMs, evidence });
     });
     child.on('close', code => {
