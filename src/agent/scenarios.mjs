@@ -6,8 +6,9 @@ function hash(value) {
 
 export function generateScenarios({ surface, roles = [], max = 100, allowMutations = false } = {}) {
   const scenarios = [];
+  const uncovered = new Set(surface && surface.uncoveredRoutes || []);
   for (const route of surface && surface.routes || []) {
-    scenarios.push({ id: 'page-' + hash({ route: route.path, type: 'navigation' }), kind: 'navigation', risk: route.path === '/' ? 'MEDIUM' : 'HIGH', path: route.path, method: 'GET', role: 'anonymous' });
+    scenarios.push({ id: 'page-' + hash({ route: route.path, type: 'navigation' }), kind: uncovered.has(route.path) ? 'uncovered_navigation' : 'navigation', risk: uncovered.has(route.path) ? 'HIGH' : (route.path === '/' ? 'MEDIUM' : 'HIGH'), path: route.path, method: 'GET', role: 'anonymous' });
     scenarios.push({ id: 'page-' + hash({ route: route.path, type: 'browser_health' }), kind: 'browser_health', risk: 'HIGH', path: route.path, method: 'GET', role: 'anonymous' });
     if (route.dynamic) scenarios.push({ id: 'page-' + hash({ route: route.path, type: 'not-found' }), kind: 'negative_navigation', risk: 'MEDIUM', path: route.path.replace(/:[^/]+/g, 'nonexistent'), method: 'GET', role: 'anonymous' });
   }
