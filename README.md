@@ -198,6 +198,7 @@ The framework also covers AI/LLM and agentic systems:
 - `docs/OPEN-SOURCE-REPOSITORY-STANDARDS.md` — public repository standards
 - `docs/NPM-PNPM-CLI.md` — npm/pnpm package and CLI guide
 - `docs/ISSUE-QUALITY-SPECIFICATION.md` — Issue contract
+- `docs/PROOF-ENGINE-V3.md` — Proof Engine v3 specification
 - `quality.yaml` — quality profiles and policies
 - `prompts/` — reusable AI engineering prompts
 - `CHANGELOG.md` — release history
