@@ -17,7 +17,7 @@ function normalize(value) {
 }
 
 export function evaluateOracle(oracle, observation = {}) {
-  const missing = (oracle.evidenceRequired || []).filter(k => observation[k] == null);
+  const missing = (oracle.evidenceRequired || []).filter(k => observation[k] == null || observation[k] === '');
   if (missing.length) return { verdict: 'MISSING_EVIDENCE', confidence: 1, missing, reason: `Missing required evidence: ${missing.join(', ')}` };
 
   if (oracle.type === ORACLE_TYPES.EXACT) {
@@ -41,7 +41,10 @@ export function evaluateOracle(oracle, observation = {}) {
 
 export function assessProof({ requirement, oracleResults = [], evidence = [] }) {
   const required = requirement?.requiredEvidence || [];
-  const evidenceKeys = new Set(evidence.flatMap(e => e.keys || []));
+  const evidenceKeys = new Set(evidence.flatMap(e => [
+    ...(Array.isArray(e?.keys) ? e.keys : []),
+    ...Object.keys(e ?? {}).filter(k => !['stdout', 'stderr', 'meta'].includes(k))
+  ]));
   const missingEvidence = required.filter(k => !evidenceKeys.has(k));
   if (missingEvidence.length) return { status:'INSUFFICIENT_PROOF', confidence:1, missingEvidence, rationale:'Required evidence is absent.' };
 
