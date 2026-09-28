@@ -15,6 +15,16 @@ function startServer(command, cwd) {
   if (!command) return null;
   return spawn(command, { cwd, shell: true, stdio: 'ignore' });
 }
+function roleHeadersFromEnv(roles) {
+  const result = {};
+  for (const item of roles) {
+    const role = item.role || item;
+    const key = 'HASHCODE_QA_ROLE_' + String(role).toUpperCase().replace(/[^A-Z0-9]+/g, '_') + '_TOKEN';
+    if (process.env[key]) result[role] = { authorization: 'Bearer ' + process.env[key] };
+  }
+  return result;
+}
+
 async function waitForUrl(url, timeoutMs = 30000) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
@@ -52,7 +62,7 @@ export async function runAutonomousQA({
       server = startServer(startCommand, cwd);
       if (baseUrl && !(await waitForUrl(baseUrl, 30000))) throw new Error('Application did not become reachable at ' + baseUrl);
     }
-    const browser = await exploreBrowser({ baseUrl, routes: surface.routes, outDir: join(outDir, 'browser'), maxPages, maxDepth, timeoutMs });
+    const browser = await exploreBrowser({ baseUrl, routes: surface.routes, roles, roleHeaders: roleHeadersFromEnv(roles), outDir: join(outDir, 'browser'), maxPages, maxDepth, timeoutMs });
     const api = await probeApi({ baseUrl, endpoints: [...surface.openapi, ...surface.apiRoutes], timeoutMs, allowMutations });
     const findings = [...browser.findings, ...api.findings].map(function (f) { return { ...f, confidence: f.confidence == null ? 1 : f.confidence }; });
     const report = { version: '1.0', runId, startedAt, finishedAt: new Date().toISOString(), gitSha: gitSha(cwd), baseUrl, surface, roles, scenarios, browser, api, findings };
