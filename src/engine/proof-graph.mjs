@@ -1,3 +1,10 @@
+import { createHash } from 'node:crypto';
+
+function hashGraph(graph) {
+  const canonical = JSON.stringify({ version: graph.version, gitSha: graph.gitSha, nodes: graph.nodes, edges: graph.edges });
+  return createHash('sha256').update(canonical).digest('hex');
+}
+
 export const PROOF_NODE_TYPES = Object.freeze({ REQUIREMENT: 'requirement', RISK: 'risk', ORACLE: 'oracle', EXECUTION: 'execution', EVIDENCE: 'evidence', EVALUATION: 'evaluation', PROOF: 'proof', REGRESSION: 'regression', GATE: 'gate' });
 
 export function buildProofGraph({ checks = [], proofAssessments = [], findings = [], gate = null, gitSha = null } = {}) {
@@ -45,5 +52,7 @@ export function buildProofGraph({ checks = [], proofAssessments = [], findings =
   const gateId = 'gate:quality';
   addNode(gateId, PROOF_NODE_TYPES.GATE, { status: gate?.status ?? null, reasons: gate?.reasons ?? [] });
   for (const proof of nodes.filter(n => n.type === PROOF_NODE_TYPES.PROOF)) addEdge(proof.id, gateId, 'contributes_to');
-  return { version: '1.0', gitSha, nodes, edges };
+  const graph = { version: '1.1', gitSha, nodes, edges };
+  graph.graphHash = hashGraph(graph);
+  return graph;
 }
