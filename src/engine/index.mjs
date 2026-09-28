@@ -97,7 +97,8 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
         oracleResults,
         evidence,
         runId,
-        gitSha: gitSha(cwd)
+        gitSha: gitSha(cwd),
+        proofPolicy: plan.proofPolicy
       })
     };
   });
