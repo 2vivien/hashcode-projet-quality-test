@@ -53,16 +53,23 @@ export async function reportFindings({ findings = [], repo, token, branch = 'mai
     const fp = fingerprint(finding);
     if (openIssues.some(function (i) { return String(i.body || '').includes('fingerprint:' + fp); })) { issues.push({ fingerprint: fp, status: 'DUPLICATE' }); continue; }
     const artifacts = [];
-    if (publishArtifacts && finding.evidence && finding.evidence.screenshot && existsSync(finding.evidence.screenshot)) {
-      const remote = 'qa-artifacts/' + runId + '/' + finding.evidence.screenshot.split('/').at(-1);
-      try {
-        const uploaded = await uploadArtifact(token, repo, finding.evidence.screenshot, remote, branch);
-        const url = uploaded.content && (uploaded.content.download_url || uploaded.content.html_url);
-        if (url) artifacts.push({ label: 'screenshot', url });
-      } catch (e) { failures.push({ fingerprint: fp, error: 'artifact upload: ' + e.message }); }
+    if (publishArtifacts && finding.evidence) {
+      const files = [];
+      if (finding.evidence.screenshot && existsSync(finding.evidence.screenshot)) files.push({ label: 'screenshot', file: finding.evidence.screenshot });
+      if (finding.evidence.trace && existsSync(finding.evidence.trace)) files.push({ label: 'trace', file: finding.evidence.trace });
+      for (const artifact of files) {
+        const remote = 'qa-artifacts/' + runId + '/' + artifact.file.split('/').at(-1);
+        try {
+          const uploaded = await uploadArtifact(token, repo, artifact.file, remote, branch);
+          const url = uploaded.content && (uploaded.content.download_url || uploaded.content.html_url);
+          if (url) artifacts.push({ label: artifact.label, url });
+        } catch (e) { failures.push({ fingerprint: fp, error: 'artifact upload: ' + e.message }); }
+      }
     }
-    const created = await gh(token, repo, '/issues', { method: 'POST', body: JSON.stringify({ title: '[HashCode QA] ' + finding.title, body: issueBody(finding, { runId, gitSha }, artifacts), labels }) });
-    issues.push({ fingerprint: fp, status: 'CREATED', number: created.number, url: created.html_url });
+    try {
+      const created = await gh(token, repo, '/issues', { method: 'POST', body: JSON.stringify({ title: '[HashCode QA] ' + finding.title, body: issueBody(finding, { runId, gitSha }, artifacts), labels }) });
+      issues.push({ fingerprint: fp, status: 'CREATED', number: created.number, url: created.html_url });
+    } catch (e) { failures.push({ fingerprint: fp, error: 'issue creation: ' + e.message }); }
   }
   return { status: failures.length ? 'PARTIAL' : 'OK', issues, failures };
 }
