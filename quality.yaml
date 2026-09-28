@@ -97,6 +97,13 @@ profiles:
       - model_regression_tests
       - cost_latency_tracking
 
+proof:
+  strict_critical: true
+  high_risk_multi_oracle: false
+  judge_repetitions: 3
+  no_self_modification: true
+  evaluator_out_of_band: true
+
 policies:
   issue_language: fr
   require_evidence_for_confirmed: true
