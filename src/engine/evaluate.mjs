@@ -20,13 +20,13 @@ export function evaluateCheck(check, result) {
   })];
 }
 
-export function buildGate({ checks = [], findings = [], proofAssessments = [], profile }) {
+export function buildGate({ checks = [], findings = [], proofAssessments = [], profile, requireHighRiskProof = false }) {
   const requiredFailures = checks.filter(c => c.required && c.result?.status !== RESULT_STATUS.PASS);
   const blockers = findings.filter(f => ['CONFIRMED_DEFECT', 'ENVIRONMENT_BLOCKER'].includes(f.kind) && ['HIGH','CRITICAL'].includes(f.severity));
   const requiredProofFailures = proofAssessments.filter((p, i) => {
     const check = checks.find(c => c.id === p.checkId) ?? checks[i];
     const risk = p.receipt?.requirement?.risk ?? check?.risk ?? 'MEDIUM';
-    const mandatory = Boolean(check?.required) || ['CRITICAL'].includes(String(risk).toUpperCase());
+    const mandatory = Boolean(check?.required) || ['CRITICAL'].includes(String(risk).toUpperCase()) || (requireHighRiskProof && String(risk).toUpperCase() === 'HIGH');
     return mandatory && p.receipt?.status !== 'PROVEN';
   });
   const status = requiredFailures.length || blockers.length || requiredProofFailures.length
