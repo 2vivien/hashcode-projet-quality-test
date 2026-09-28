@@ -1,7 +1,14 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 export { executeQuality } from './engine/index.mjs';
-export { RESULT_STATUS, FINDING_KIND } from './engine/model.mjs';
+export { RESULT_STATUS, FINDING_KIND, createRequirement, createEvidence, createCheck, createFinding } from './engine/model.mjs';
+export { createOracle, evaluateOracle, generateProofPlan, ORACLE_TYPES } from './engine/oracle.mjs';
+export { buildProofReceipt, explainProof, PROOF_STATUS } from './engine/proof-ledger.mjs';
+export { buildProofGraph } from './engine/proof-graph.mjs';
+export { createFrozenHarness, verifyFrozenHarness, detectHarnessMutation } from './engine/harness.mjs';
+export { createDataset, loadDataset, verifyDataset } from './engine/dataset.mjs';
+export { buildProofEngine, proveRequirement } from './engine/proof-engine.mjs';
+export { evaluateRepeated, compareDifferential, evaluateMetamorphic, evaluateProperty } from './engine/evaluators.mjs';
 
 export const PROFILES = {
   minimal: ['lint', 'typecheck', 'unit', 'dependency_hygiene'],
