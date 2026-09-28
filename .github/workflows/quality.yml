@@ -43,6 +43,12 @@ jobs:
           node --check src/engine/regression.mjs
           node --check src/engine/evaluators.mjs
           node --check src/engine/run-integrity.mjs
+          node --check src/agent/route-discovery.mjs
+          node --check src/agent/scenarios.mjs
+          node --check src/agent/browser-agent.mjs
+          node --check src/agent/api-agent.mjs
+          node --check src/agent/github-reporter.mjs
+          node --check src/agent/index.mjs
       - name: Engine unit tests
         run: npm test
       - name: CLI smoke test
@@ -53,6 +59,7 @@ jobs:
           node src/cli.mjs check --profile minimal --json
           node src/cli.mjs prove --json
           node src/cli.mjs verify --json
+          node src/cli.mjs agent --json
       - name: Package dry run
         run: npm pack --dry-run
       - name: Dependency audit
