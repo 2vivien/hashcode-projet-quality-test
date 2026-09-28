@@ -36,7 +36,10 @@ export function buildAuthorizationMatrix({ endpoints = [], fixtures = {} } = {})
     const parameterized = /\{[^}]+\}|:[a-zA-Z_][a-zA-Z0-9_]*/.test(endpoint.path);
     if (!parameterized) continue;
     const objectParam = (endpoint.path.match(/\{([^}]+)\}|:([a-zA-Z_][a-zA-Z0-9_]*)/) || [])[1] || (endpoint.path.match(/\{([^}]+)\}|:([a-zA-Z_][a-zA-Z0-9_]*)/) || [])[2];
-    const objectType = endpoint.objectType || objectParam?.replace(/Id$/i, '').replace(/[_-]?id$/i, '') || 'objects';
+    const segments = endpoint.path.split('/').filter(Boolean);
+    const paramIndex = segments.findIndex(segment => segment === '{' + objectParam + '}' || segment === ':' + objectParam);
+    const collectionSegment = paramIndex > 0 ? segments[paramIndex - 1] : null;
+    const objectType = endpoint.objectType || collectionSegment || objectParam?.replace(/Id$/i, '').replace(/[_-]?id$/i, '') || 'objects';
     for (const role of fixtures.roles || []) {
       const owned = (Array.isArray(fixtures.objects?.[objectType]) ? fixtures.objects[objectType] : Object.values(fixtures.objects?.[objectType] || {}))
         .filter(x => x.ownerRole === role.name);
