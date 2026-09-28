@@ -8,6 +8,8 @@ import { buildPlan, selectChecks } from './planner.mjs';
 import { runCheck } from './runner.mjs';
 import { evaluateCheck, buildGate } from './evaluate.mjs';
 import { planProof } from './proof.mjs';
+import { evaluateOracle } from './oracle.mjs';
+import { buildProofReceipt } from './proof-ledger.mjs';
 
 function gitSha(cwd) {
   const r = spawnSync('git', ['rev-parse', 'HEAD'], { cwd, encoding: 'utf8' });
@@ -51,18 +53,35 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
   }
 
   const proofPlans = checks.map(check => planProof({
+    id: check.id,
     statement: check.purpose,
+    expected: 0,
     requiredEvidence: ['exitCode']
   }, {
     risk: check.risk,
-    capabilities: { semanticEvaluator: profile === 'ai' }
+    capabilities: { semanticEvaluator: false }
   }));
-  const proofAssessments = checks.map((check, i) => ({
-    checkId: check.id,
-    plan: proofPlans[i],
-    status: check.result?.status === 'PASS' ? 'PROVEN' : check.result?.status === 'FAIL' ? 'NOT_PROVEN' : 'INSUFFICIENT_PROOF',
-    evidence: check.result?.evidence ? [{ keys: ['exitCode', 'stdout', 'stderr', 'durationMs'] }] : []
-  }));
+  const proofAssessments = checks.map((check, i) => {
+    const evidence = check.result?.evidence ? [check.result.evidence] : [];
+    const plan = proofPlans[i];
+    const oracleResults = plan.oracles.map(oracle => evaluateOracle(oracle, {
+      actual: check.result?.exitCode,
+      expected: 0,
+      ...check.result?.evidence
+    }));
+    return {
+      checkId: check.id,
+      plan,
+      receipt: buildProofReceipt({
+        requirement: { id: check.id, statement: check.purpose, requiredEvidence: ['exitCode'] },
+        risk: check.risk,
+        oraclePlan: plan.oracles,
+        oracleResults,
+        evidence,
+        gitSha: gitSha(cwd)
+      })
+    };
+  });
   const gate = buildGate({ checks, findings, profile });
   const finishedAt = new Date().toISOString();
   const result = {
@@ -72,9 +91,15 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
     plan: { selected: plan.checks.map(x => x.id), totalAvailable: initialPlan.checks.length, gaps: plan.gaps },
     checks, findings, proofAssessments, gate,
     intelligence: {
-      traceability: 'discovery -> risk -> plan -> execution -> evidence -> evaluation -> gate',
+      traceability: 'requirement -> risk -> oracle -> execution -> evidence -> evaluation -> proof -> gate',
       regression: findings.filter(f => f.kind === 'CONFIRMED_DEFECT').map(f => ({ findingId: f.id, tests: f.regressionTests })),
       evidenceComplete: checks.every(c => Boolean(c.result?.evidence)),
+      proofSummary: {
+        proven: proofAssessments.filter(p => p.receipt.status === 'PROVEN').length,
+        notProven: proofAssessments.filter(p => p.receipt.status === 'NOT_PROVEN').length,
+        inconclusive: proofAssessments.filter(p => p.receipt.status === 'INCONCLUSIVE').length,
+        insufficient: proofAssessments.filter(p => p.receipt.status === 'INSUFFICIENT_PROOF').length
+      },
       changedFiles: detectedChanges,
       prompt: existsSync(join(cwd, 'prompts/14-test-intelligence.md')) ? 'prompts/14-test-intelligence.md' : null,
       configLoaded: Boolean(config)
