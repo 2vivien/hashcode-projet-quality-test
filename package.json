@@ -1,6 +1,6 @@
 {
   "name": "hashcode-quality",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Universal, risk-based quality engineering CLI for software and AI projects.",
   "type": "module",
   "bin": {
@@ -59,7 +59,9 @@
     "evidence": "node ./src/cli.mjs evidence",
     "regressions": "node ./src/cli.mjs regressions",
     "explain-proof": "node ./src/cli.mjs explain-proof",
-    "verify": "node ./src/cli.mjs verify"
+    "verify": "node ./src/cli.mjs verify",
+    "agent": "node ./src/cli.mjs agent",
+    "agent:json": "node ./src/cli.mjs agent --json"
   },
   "devDependencies": {
     "prettier": "latest"
