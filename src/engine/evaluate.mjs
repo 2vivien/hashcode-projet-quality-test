@@ -25,7 +25,8 @@ export function buildGate({ checks = [], findings = [], proofAssessments = [], p
   const blockers = findings.filter(f => ['CONFIRMED_DEFECT', 'ENVIRONMENT_BLOCKER'].includes(f.kind) && ['HIGH','CRITICAL'].includes(f.severity));
   const requiredProofFailures = proofAssessments.filter((p, i) => {
     const check = checks.find(c => c.id === p.checkId) ?? checks[i];
-    const mandatory = Boolean(check?.required) || ['HIGH', 'CRITICAL'].includes(String(check?.risk ?? '').toUpperCase());
+    const risk = p.receipt?.requirement?.risk ?? check?.risk ?? 'MEDIUM';
+    const mandatory = Boolean(check?.required) || ['CRITICAL'].includes(String(risk).toUpperCase());
     return mandatory && p.receipt?.status !== 'PROVEN';
   });
   const status = requiredFailures.length || blockers.length || requiredProofFailures.length
@@ -34,12 +35,12 @@ export function buildGate({ checks = [], findings = [], proofAssessments = [], p
   const reasons = [
     ...requiredFailures.map(c => `required check failed: ${c.id}`),
     ...blockers.map(f => f.title),
-    ...requiredProofFailures.map(p => `required proof not established: ${p.checkId} (${p.receipt?.status ?? 'UNKNOWN'})`)
+    ...requiredProofFailures.map(p => `required proof not established: ${p.requirementId ?? p.checkId ?? 'unknown'} (${p.receipt?.status ?? 'UNKNOWN'})`)
   ];
   return {
     status, profile,
     checks: checks.map(c => ({ id: c.id, status: c.result?.status || RESULT_STATUS.NOT_RUN })),
-    proof: { required: requiredProofFailures.length === 0, failures: requiredProofFailures.map(p => ({ checkId: p.checkId, status: p.receipt?.status })) },
+    proof: { required: requiredProofFailures.length === 0, failures: requiredProofFailures.map(p => ({ checkId: p.checkId, requirementId: p.requirementId ?? p.receipt?.requirement?.id ?? null, status: p.receipt?.status })) },
     findings, reasons, generatedAt: new Date().toISOString()
   };
 }
