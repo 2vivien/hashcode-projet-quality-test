@@ -82,8 +82,15 @@ export function buildProofReceipt({ requirement, risk = 'MEDIUM', oraclePlan = [
     ? Math.min(...oracleReceipts.map(o => o.confidence))
     : 0;
 
+  const reproducibility = {
+    hasGitSha: Boolean(gitSha),
+    hasEvidenceIds: evidence.every(e => Boolean(e.id)),
+    hasTimestamps: evidence.every(e => Boolean(e.timestamp)),
+    reproducible: Boolean(gitSha) && evidence.length > 0 && evidence.every(e => Boolean(e.id && e.timestamp))
+  };
+
   const receipt = {
-    version: '1.0',
+    version: '1.1',
     runId,
     gitSha,
     requirement: {
@@ -95,6 +102,7 @@ export function buildProofReceipt({ requirement, risk = 'MEDIUM', oraclePlan = [
     status,
     rationale,
     confidence,
+    reproducibility,
     verified: oracleReceipts.filter(o => o.verdict === 'PASS').map(o => ({
       oracle: o.type,
       criterion: o.criterion,
@@ -103,13 +111,17 @@ export function buildProofReceipt({ requirement, risk = 'MEDIUM', oraclePlan = [
     data: {
       evidenceCount: evidence.length,
       evidence: evidenceDescriptor(evidence),
-      evidenceIds: evidence.map(e => e.id).filter(Boolean)
+      evidenceIds: evidence.map(e => e.id).filter(Boolean),
+      inputHashes: evidence.map(e => e.meta?.inputHash).filter(Boolean),
+      datasetVersions: evidence.map(e => e.meta?.datasetVersion).filter(Boolean),
+      evaluatorVersions: evidence.map(e => e.meta?.evaluatorVersion).filter(Boolean)
     },
     oracles: oracleReceipts,
     remaining: {
       missingEvidence,
       unevaluatedOracles: oracleReceipts.filter(o => o.verdict === 'NOT_EVALUATED').map(o => o.type),
       unresolvedOracles: oracleReceipts.filter(o => !['PASS', 'FAIL'].includes(o.verdict)).map(o => o.type),
+      reproducibilityGaps: reproducibility.reproducible ? [] : ['gitSha', 'evidence identity/timestamps'],
       note: status === PROOF_STATUS.PROVEN
         ? 'This receipt proves only the stated requirement under the stated oracle and evidence. It does not prove unrelated behavior.'
         : 'The requirement remains unproven until the listed gaps are resolved.'
