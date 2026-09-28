@@ -113,6 +113,14 @@ function regressions() {
   const data = (run.findings ?? []).filter(f => f.regressionTests?.length).map(f => ({ id: f.id, kind: f.kind, title: f.title, tests: f.regressionTests }));
   say(json ? { runId: run.runId, regressions: data } : (data.length ? data.map(x => `- ${x.title}\n  ${x.tests.join('\n  ')}`).join('\n') : 'Aucune régression enregistrée.'));
 }
+
+function verify() {
+  const run = latestRun();
+  if (!run) { console.error('Aucun run disponible.'); process.exitCode = 2; return; }
+  const integrity = verifyPersistedRun(run);
+  say(json ? integrity : `Run integrity: ${integrity.valid ? 'VALID' : 'INVALID'}\nGraph: ${integrity.graph.valid ? 'valid' : 'invalid'}\nHarness: ${integrity.harness.valid ? 'valid' : 'invalid'}\nEvidence: ${integrity.evidence.valid ? 'valid' : 'invalid'}`);
+  process.exitCode = integrity.valid ? 0 : 1;
+}
 function prompt() {
   const requested = args.find((arg) => arg.endsWith('.md')) || 'prompts/00-master-orchestrator.md';
   const content = loadPrompt(root, requested);
@@ -130,6 +138,7 @@ switch (command) {
   case 'evidence': evidence(); break;
   case 'regressions': regressions(); break;
   case 'explain-proof': prove(); break;
+  case 'verify': verify(); break;
   case 'prompt': prompt(); break;
   case '--help':
   case 'help':
@@ -146,7 +155,8 @@ Usage:
   npx hashcode-quality eval [--json]
   npx hashcode-quality evidence [--json]
   npx hashcode-quality regressions [--json]
-  npx hashcode-quality explain-proof [--json]`);
+  npx hashcode-quality explain-proof [--json]
+  npx hashcode-quality verify [--json]`);
     break;
   default:
     console.error(`Commande inconnue: ${command}`);
