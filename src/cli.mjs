@@ -188,7 +188,7 @@ Usage:
   npx hashcode-quality audit [--json]
   npx hashcode-quality check --profile minimal|standard|production|ai [--json]
   npx hashcode-quality check --changed-file=src/foo.ts
-  npx hashcode-quality agent --base-url=http://localhost:3000 [--start-command='npm run dev'] [--open-issues]
+  npx hashcode-quality agent --base-url=http://localhost:3000 [--start-command='npm run dev'] [--authorization-fixtures=.hashcode-quality/authorization-fixtures.json] [--open-issues]
   npx hashcode-quality qa-agent --base-url=http://localhost:3000
   npx hashcode-quality prompt [prompt-file.md]
   npx hashcode-quality prove [--json]
