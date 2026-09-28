@@ -97,6 +97,7 @@ Final quality gate
 | `regressions` | Lists generated regression cases |
 | `explain-proof` | Shows the auditable proof explanation |
 | `verify` | Verifies persisted graph, harness and evidence integrity |
+| `agent` | Discovers routes/API/roles, explores the running application and captures anomalies |
 
 Machine-readable output is available with `--json` for supported commands.
 
@@ -147,6 +148,40 @@ npx hashcode-quality regressions
 npx hashcode-quality explain-proof --json
 npx hashcode-quality verify --json
 ```
+
+## Autonomous QA Agent
+
+The Proof Engine establishes what an execution actually proves. The Autonomous QA Agent is the execution layer above it.
+
+It discovers application routes, API handlers and OpenAPI operations, infers role-related signals, generates risk-prioritized scenarios, explores the running web application with Playwright when available, probes safe API operations, captures screenshots/traces and can open deduplicated GitHub issues.
+
+```text
+Application
+  -> Surface model
+  -> Scenario generation
+  -> Risk prioritization
+  -> Browser/API execution
+  -> Evidence
+  -> Finding fingerprint
+  -> Optional GitHub Issue
+  -> Proof Engine
+```
+
+Run it against a local application:
+
+```bash
+npx hashcode-quality agent --base-url=http://localhost:3000 --start-command="npm run dev"
+```
+
+Issue creation is explicit:
+
+```bash
+npx hashcode-quality agent --base-url=http://localhost:3000 --open-issues
+```
+
+By default, mutation API methods are not executed. Use `--allow-mutations` only in a disposable test environment.
+
+See `docs/AUTONOMOUS-QA-AGENT.md`.
 
 ## Profiles
 
