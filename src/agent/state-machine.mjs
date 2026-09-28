@@ -62,7 +62,7 @@ export async function runStateMachine({ baseUrl, workflows = [], fixtures = {}, 
       try {
         const roleHeaders = definition.role ? (resolveRoleHeaders(definition.role, fixtures) || {}) : {};
       const response = await fetch(url, { method: definition.method, headers: { accept: 'application/json', ...roleHeaders, ...(definition.headers || {}) }, signal: controller.signal });
-        const text = await response.text();
+        const text = (await response.text()).replace(/Bearer\s+[A-Za-z0-9._~-]+/gi, 'Bearer [REDACTED]').replace(/("?(?:access_token|refresh_token|token|password|secret|api[_-]?key)"?\s*[:=]\s*)["']?[^,"'\\s}]+/gi, '$1[REDACTED]');
         let body = null; try { body = JSON.parse(text); } catch {}
         for (const item of extractIds(body)) state[item.key] = item.value;
         const step = { method: definition.method, path: definition.path, url, status: response.status, durationMs: Date.now() - started, state: { ...state }, bodySample: text.slice(0, 2000) };
