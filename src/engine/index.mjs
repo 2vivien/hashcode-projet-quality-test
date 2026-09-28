@@ -71,13 +71,14 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
   });
   const proofPlans = requirements.map(requirement => planProof(requirement, {
     risk: requirement.risk,
-    capabilities: { semanticEvaluator: false, differentialReference: false }
+    capabilities: { semanticEvaluator: false, differentialReference: false },
+    profile,
   }));
   const harness = createFrozenHarness({
     id: `run-${startedAt}`,
     oraclePlans: proofPlans,
-    thresholds: { highRiskMinimumConfidence: 0.9 },
-    policy: { noSelfModification: true, evaluatorIsOutOfBand: true }
+    thresholds: { highRiskMinimumConfidence: 0.9, judgeRepetitions: config.proof?.judge_repetitions ?? 3 },
+    policy: { noSelfModification: config.proof?.no_self_modification !== false, evaluatorIsOutOfBand: config.proof?.evaluator_out_of_band !== false }
   });
   const runId = `run_${startedAt.replace(/[^0-9]/g, '')}_${gitSha(cwd)?.slice(0, 12) ?? 'nogit'}`;
   const proofAssessments = checks.map((check, i) => {
