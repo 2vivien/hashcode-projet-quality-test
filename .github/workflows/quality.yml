@@ -55,6 +55,7 @@ jobs:
           node --check src/agent/access-control.mjs
           node --check src/agent/state-machine.mjs
           node --check src/agent/proof.mjs
+          node --check src/agent/risk.mjs
       - name: Engine unit tests
         run: npm test
       - name: CLI smoke test
