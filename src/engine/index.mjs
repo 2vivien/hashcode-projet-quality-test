@@ -84,6 +84,7 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
     };
   });
   const gate = buildGate({ checks, findings, profile });
+  const proofGraph = buildProofGraph({ checks, proofAssessments, findings, gate, gitSha: gitSha(cwd) });
   const finishedAt = new Date().toISOString();
   const result = {
     engineVersion: '2.2.0-gold',
