@@ -1,6 +1,6 @@
 {
   "name": "hashcode-quality",
-  "version": "2.3.0",
+  "version": "3.0.0",
   "description": "Universal, risk-based quality engineering CLI for software and AI projects.",
   "type": "module",
   "bin": {
