@@ -14,7 +14,10 @@ export async function exploreBrowser({ baseUrl, routes = [], roles = [], roleHea
   const context = await browser.newContext({ ignoreHTTPSErrors: true });
   const roleNames = ['anonymous', ...roles.map(function (r) { return r.role || r; }).filter(Boolean)];
   const queue = [];
-  for (const r of routes) for (const role of roleNames) queue.push({ url: new URL(r.path, baseUrl).href, depth: 0, role });
+  for (const r of routes) for (const role of roleNames) {
+    const concretePath = r.path.replace(/:[^/]+/g, 'nonexistent').replace(/\*[^/]+/g, 'nonexistent');
+    queue.push({ url: new URL(concretePath, baseUrl).href, depth: 0, role });
+  }
   const seen = new Set();
   const pages = [];
   const findings = [];
