@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { discoverApplicationSurface, inferRoles } from './route-discovery.mjs';
 import { generateScenarios, prioritizeScenarios } from './scenarios.mjs';
+import { prioritizeByRisk } from './risk.mjs';
 import { exploreBrowser } from './browser-agent.mjs';
 import { probeApi } from './api-agent.mjs';
 import { loadAuthorizationFixtures, listFixtureRoles, resolveRoleHeaders } from './fixtures.mjs';
@@ -70,12 +71,12 @@ export async function runAutonomousQA({
   const roles = inferredRoles.map(x => x.role).filter(role => fixtureRoles.includes(role));
   const scenarioRoles = roles.length ? roles : fixtureRoles.filter(role => role !== 'anonymous');
 
-  const scenarios = prioritizeScenarios(generateScenarios({
+  const scenarios = prioritizeByRisk(prioritizeScenarios(generateScenarios({
     surface,
     roles: scenarioRoles,
     max: maxScenarios,
     allowMutations
-  }));
+  })));
 
   let server = null;
   try {
