@@ -45,10 +45,34 @@ async function uploadArtifact(token, repo, file, remotePath, branch) {
   const body = { message: 'chore(qa): publish autonomous QA artifact', content, branch };
   return gh(token, repo, '/contents/' + remotePath, { method: 'PUT', body: JSON.stringify(body) });
 }
+async function ensureArtifactBranch(token, repo, baseBranch, runId) {
+  const branch = 'qa-artifacts/' + runId;
+  try {
+    await gh(token, repo, '/git/ref/heads/' + encodeURIComponent(baseBranch), { method: 'GET' });
+  } catch (error) {
+    throw new Error('Base branch unavailable: ' + error.message);
+  }
+  try {
+    await gh(token, repo, '/git/ref/heads/' + encodeURIComponent(branch), { method: 'GET' });
+    return branch;
+  } catch {}
+  const base = await gh(token, repo, '/git/ref/heads/' + encodeURIComponent(baseBranch), { method: 'GET' });
+  await gh(token, repo, '/git/refs', {
+    method: 'POST',
+    body: JSON.stringify({ ref: 'refs/heads/' + branch, sha: base.object.sha })
+  });
+  return branch;
+}
+
 export async function reportFindings({ findings = [], repo, token, branch = 'main', runId, gitSha, publishArtifacts = true, labels = ['qa', 'automated'] } = {}) {
   if (!token || !repo) return { status: 'BLOCKED', reason: 'GitHub token and repository are required.', issues: [] };
   const issues = [];
   const failures = [];
+  let artifactBranch = branch;
+  if (publishArtifacts) {
+    try { artifactBranch = await ensureArtifactBranch(token, repo, branch, runId); }
+    catch (e) { failures.push({ fingerprint: null, error: 'artifact branch: ' + e.message }); }
+  }
   let openIssues;
   try { openIssues = await gh(token, repo, '/issues?state=open&per_page=100'); } catch (e) { return { status: 'BLOCKED', reason: e.message, issues: [] }; }
   if (labels.length) {
@@ -76,7 +100,7 @@ export async function reportFindings({ findings = [], repo, token, branch = 'mai
       for (const artifact of files) {
         const remote = 'qa-artifacts/' + runId + '/' + artifact.file.split('/').at(-1);
         try {
-          const uploaded = await uploadArtifact(token, repo, artifact.file, remote, branch);
+          const uploaded = await uploadArtifact(token, repo, artifact.file, remote, artifactBranch);
           const url = uploaded.content && (uploaded.content.download_url || uploaded.content.html_url);
           if (url) artifacts.push({ label: artifact.label, url });
         } catch (e) { failures.push({ fingerprint: fp, error: 'artifact upload: ' + e.message }); }
