@@ -83,7 +83,10 @@ export function assessProof({ requirement, oracleResults = [], evidence = [] }) 
 export function generateProofPlan({ requirement, risk = 'MEDIUM', capabilities = {} }) {
   const plans = [];
   const statement = String(requirement?.statement || '');
-  const highRisk = ['HIGH', 'CRITICAL'].includes(String(risk).toUpperCase());
+  const normalizedRisk = String(risk).toUpperCase();
+  const highRisk = ['HIGH', 'CRITICAL'].includes(normalizedRisk);
+  const strictHighRisk = capabilities.strictHighRisk === true;
+  const strict = normalizedRisk === 'CRITICAL' || strictHighRisk;
 
   if (requirement?.expected !== undefined) {
     plans.push(createOracle({ type: ORACLE_TYPES.EXACT, criterion: 'actual equals expected', evidenceRequired: ['exitCode'] }));
@@ -121,6 +124,6 @@ export function generateProofPlan({ requirement, risk = 'MEDIUM', capabilities =
     requirement: statement,
     risk,
     oracles: plans,
-    proofPolicy: highRisk ? 'multi_oracle_required' : 'deterministic_first'
+    proofPolicy: strict ? 'multi_oracle_required' : 'deterministic_first'
   };
 }
