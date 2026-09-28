@@ -45,7 +45,9 @@ export function buildProofReceipt({ requirement, risk = 'MEDIUM', oraclePlan = [
   );
   const missingEvidence = requiredEvidence.filter(key => !availableEvidence.has(key));
 
-  const oracleEvidenceMissing = oraclePlan.map((oracle) => (oracle.evidenceRequired ?? []).filter(key => !availableEvidence.has(key)));\n\n  const oracleReceipts = oraclePlan.map((oracle, index) => {
+  const oracleEvidenceMissing = oraclePlan.map((oracle) => (oracle.evidenceRequired ?? []).filter(key => !availableEvidence.has(key)));
+
+  const oracleReceipts = oraclePlan.map((oracle, index) => {
     const result = oracleResults[index] ?? null;
     return {
       type: oracle.type,
