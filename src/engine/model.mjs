@@ -28,7 +28,7 @@ export function createCheck({ id, category, purpose, risk = 'MEDIUM', command, a
 }
 
 export function createRequirement({ id, statement, risk = 'MEDIUM', acceptanceCriteria = [], invariants = [], requiredEvidence = [], scope = {} }) {
-  return { id, statement, risk, acceptanceCriteria, invariants, requiredEvidence, scope };
+  return { id, statement, risk, acceptanceCriteria, invariants, requiredEvidence, scope, expected, schema };
 }
 
 export function createFinding({ kind, severity = 'MEDIUM', confidence = 1, title, summary, evidence = [], rootCause = null, consequence = null, location = null, regressionTests = [] }) {
