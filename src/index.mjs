@@ -41,3 +41,9 @@ export function loadConfig(cwd = process.cwd()) {
   const path = join(cwd, 'quality.yaml');
   return existsSync(path) ? readFileSync(path, 'utf8') : null;
 }
+
+export { loadAuthorizationFixtures, resolveRoleHeaders, listFixtureRoles } from './agent/fixtures.mjs';
+export { buildAuthorizationMatrix, runAuthorizationMatrix } from './agent/authorization.mjs';
+export { runFunctionAuthorization, runPropertyAuthorization } from './agent/access-control.mjs';
+export { buildStateMachine, runStateMachine } from './agent/state-machine.mjs';
+export { buildAuthorizationProof, buildAuthorizationProofSet } from './agent/proof.mjs';
