@@ -183,6 +183,44 @@ By default, mutation API methods are not executed. Use `--allow-mutations` only 
 
 See `docs/AUTONOMOUS-QA-AGENT.md`.
 
+### Authorization-aware QA
+
+For real access-control testing, provide a disposable test environment plus explicit role credentials and ownership fixtures.
+
+Copy the example fixture:
+
+    docs/examples/authorization-fixtures.json
+
+to:
+
+    .hashcode-quality/authorization-fixtures.json
+
+and replace the placeholder object IDs.
+
+Then export only test credentials:
+
+    export HASHCODE_QA_ROLE_OWNER_TOKEN="..."
+    export HASHCODE_QA_ROLE_OTHER_TOKEN="..."
+    export HASHCODE_QA_ROLE_ADMIN_TOKEN="..."
+
+Run:
+
+    npx hashcode-quality agent --base-url=http://localhost:3000
+
+The agent can then execute:
+
+    role credentials
+        -> ownership matrix
+        -> BOLA checks
+        -> function authorization checks
+        -> property authorization checks
+        -> stateful API workflows
+        -> dual-oracle proof receipts
+        -> findings / GitHub issues
+
+Mutation methods remain disabled unless --allow-mutations is explicitly supplied. Use only disposable test data for mutation-enabled workflows.
+
+
 ## Profiles
 
 - **minimal** — fast feedback for small changes;
