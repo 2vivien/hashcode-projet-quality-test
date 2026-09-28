@@ -9,7 +9,7 @@ import { loadAuthorizationFixtures, listFixtureRoles, resolveRoleHeaders } from 
 import { buildAuthorizationMatrix, runAuthorizationMatrix } from './authorization.mjs';
 import { runFunctionAuthorization, runPropertyAuthorization } from './access-control.mjs';
 import { buildStateMachine, runStateMachine } from './state-machine.mjs';
-import { buildAuthorizationProofSet } from './proof.mjs';
+import { buildAuthorizationProofSet, buildAccessControlProofSet } from './proof.mjs';
 import { reportFindings } from './github-reporter.mjs';
 
 function gitSha(cwd) {
@@ -153,6 +153,9 @@ export async function runAutonomousQA({
       runId
     });
 
+    const functionProofs = buildAccessControlProofSet({ kind: 'function', cases: functionAuthorization.results, gitSha: git, runId });
+    const propertyProofs = buildAccessControlProofSet({ kind: 'property', cases: propertyAuthorization.results, gitSha: git, runId });
+
     const findings = [
       ...browser.findings,
       ...api.findings,
@@ -178,7 +181,9 @@ export async function runAutonomousQA({
         cases: authorization.cases,
         proofs: authorizationProofs.map(p => p.receipt),
         function: functionAuthorization,
-        properties: propertyAuthorization
+        functionProofs: functionProofs.map(p => p.receipt),
+        properties: propertyAuthorization,
+        propertyProofs: propertyProofs.map(p => p.receipt)
       },
       stateMachine,
       browser,
