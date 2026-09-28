@@ -22,8 +22,9 @@ export async function exploreBrowser({ baseUrl, routes = [], roles = [], roleHea
   try {
     while (queue.length && pages.length < maxPages) {
       const item = queue.shift();
-      if (seen.has(item.url) || item.depth > maxDepth) continue;
-      seen.add(item.url);
+      const visitKey = item.role + ':' + item.url;
+      if (seen.has(visitKey) || item.depth > maxDepth) continue;
+      seen.add(visitKey);
       const page = await context.newPage();
       const headers = roleHeaders[item.role] || {};
       if (Object.keys(headers).length) await page.setExtraHTTPHeaders(headers);
@@ -50,7 +51,7 @@ export async function exploreBrowser({ baseUrl, routes = [], roles = [], roleHea
           try {
             const u = new URL(href);
             const b = new URL(baseUrl);
-            if (u.origin === b.origin && !u.hash && !seen.has(u.href)) queue.push({ url: u.href, depth: item.depth + 1 });
+            if (u.origin === b.origin && !u.hash && !seen.has(u.href)) queue.push({ url: u.href, depth: item.depth + 1, role: item.role });
           } catch {}
         }
         if (httpStatus >= 500) { status = 'FAIL'; error = 'Server returned 5xx.'; }
