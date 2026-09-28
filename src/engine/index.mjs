@@ -71,7 +71,7 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
   });
   const proofPlans = requirements.map(requirement => planProof(requirement, {
     risk: requirement.risk,
-    capabilities: { semanticEvaluator: false, differentialReference: false },
+    capabilities: { semanticEvaluator: false, differentialReference: false, strictHighRisk: config.proof?.high_risk_multi_oracle === true },
     profile,
   }));
   const harness = createFrozenHarness({
