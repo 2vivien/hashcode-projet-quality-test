@@ -11,6 +11,7 @@ import { planProof } from './proof.mjs';
 import { evaluateOracle } from './oracle.mjs';
 import { buildProofReceipt } from './proof-ledger.mjs';
 import { buildProofGraph } from './proof-graph.mjs';
+import { explainProof } from './proof-ledger.mjs';
 
 function gitSha(cwd) {
   const r = spawnSync('git', ['rev-parse', 'HEAD'], { cwd, encoding: 'utf8' });
@@ -110,6 +111,10 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
   };
   if (persist) result.reportFile = persistRun(cwd, result);
   return result;
+}
+
+export function explainRunProof(run) {
+  return (run?.proofAssessments ?? []).map(p => ({ checkId: p.checkId, ...explainProof(p.receipt) }));
 }
 
 export function loadPrompt(cwd = process.cwd(), file = 'prompts/14-test-intelligence.md') {
