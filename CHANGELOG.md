@@ -1,3 +1,26 @@
+## [3.1.0] - 2026-09-28
+
+### Added
+- Autonomous QA Agent orchestration.
+- Next.js page and API surface discovery.
+- OpenAPI operation discovery.
+- Test-route coverage gap detection.
+- Risk-prioritized scenario generation.
+- Safe browser exploration with Playwright.
+- Console, page-error, failed-request and 5xx evidence.
+- Screenshots and Playwright traces for browser failures.
+- Safe API probing with mutation methods disabled by default.
+- Optional role-aware browser exploration from environment credentials.
+- Deterministic GitHub finding fingerprints and duplicate suppression.
+- Optional screenshot publication and automated GitHub issue creation.
+- CLI commands `agent` and `qa-agent`.
+- Autonomous QA architecture documentation and tests.
+
+### Safety
+- Mutation API execution is opt-in.
+- GitHub issue creation is opt-in.
+- Proof remains separate from crawler observations.
+
 # Changelog
 
 Toutes les modifications importantes de HashCode Quality sont documentées dans ce fichier.
