@@ -65,7 +65,7 @@ jobs:
           node src/cli.mjs check --profile minimal --json
           node src/cli.mjs prove --json
           node src/cli.mjs verify --json
-          node src/cli.mjs agent --json --base-url=http://127.0.0.1:9
+          node src/cli.mjs agent --json --base-url= --start-command=
       - name: Package dry run
         run: npm pack --dry-run
       - name: Dependency audit
