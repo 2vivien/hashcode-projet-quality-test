@@ -48,7 +48,7 @@ export function buildAuthorizationProof({ testCase, observation, gitSha = null, 
     invariantValid: observation.passed === true
   });
 
-  const evidence = [createEvidence({
+  const evidenceItem = createEvidence({
     command: testCase.method + ' ' + testCase.path,
     cwd: process.cwd(),
     exitCode: observation.passed ? 0 : 1,
@@ -64,7 +64,12 @@ export function buildAuthorizationProof({ testCase, observation, gitSha = null, 
       expectedStatus: expectedStatus(testCase),
       observedStatus: observation.status
     }
-  })];
+  });
+  evidenceItem.status = observation.status;
+  evidenceItem.passed = observation.passed;
+  evidenceItem.role = observation.role;
+  evidenceItem.objectId = observation.objectId;
+  const evidence = [evidenceItem];
 
   const receipt = buildProofReceipt({
     requirement,
