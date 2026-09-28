@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { detectStack, PROFILES } from './index.mjs';
-import { executeQuality, loadPrompt } from './engine/index.mjs';
+import { executeQuality, loadPrompt, explainRunProof } from './engine/index.mjs';
 
 const cwd = process.cwd();
 const args = process.argv.slice(2);
@@ -80,6 +80,36 @@ Evidence: ${result.intelligence.evidenceComplete ? 'complete' : 'incomplete'}`);
   process.exitCode = result.gate.status === 'FAIL' ? 1 : 0;
 }
 
+
+function latestRun() {
+  const dir = join(cwd, '.hashcode-quality', 'runs');
+  if (!existsSync(dir)) return null;
+  const files = readdirSync(dir).filter(f => f.endsWith('.json')).sort();
+  if (!files.length) return null;
+  return JSON.parse(readFileSync(join(dir, files.at(-1)), 'utf8'));
+}
+
+function prove() {
+  const run = latestRun();
+  if (!run) { console.error('Aucun run disponible. Lancez d’abord: hashcode-quality check'); process.exitCode = 2; return; }
+  const data = { runId: run.runId, gitSha: run.gitSha, proofGraphHash: run.proofGraph?.graphHash ?? null, harnessHash: run.harness?.harnessHash ?? null, summary: run.intelligence?.proofSummary ?? null, proofs: explainRunProof(run) };
+  say(json ? data : `HASHCODE PROOF\nRun: ${data.runId}\nGit SHA: ${data.gitSha ?? 'unknown'}\nProof graph: ${data.proofGraphHash ?? 'none'}\nHarness: ${data.harnessHash ?? 'none'}\n\n${data.proofs.map(p => `- ${p.checkId}: ${p.status} — ${p.why}`).join('\n')}`);
+  process.exitCode = data.proofs.some(p => ['NOT_PROVEN','INSUFFICIENT_PROOF'].includes(p.status)) ? 1 : 0;
+}
+
+function evidence() {
+  const run = latestRun();
+  if (!run) { console.error('Aucun run disponible.'); process.exitCode = 2; return; }
+  const data = (run.checks ?? []).map(c => ({ checkId: c.id, status: c.result?.status ?? null, evidence: c.result?.evidence ?? null }));
+  say(json ? { runId: run.runId, evidence: data } : data.map(x => `- ${x.checkId}: ${x.status} | evidence=${x.evidence?.id ?? 'missing'}`).join('\n'));
+}
+
+function regressions() {
+  const run = latestRun();
+  if (!run) { console.error('Aucun run disponible.'); process.exitCode = 2; return; }
+  const data = (run.findings ?? []).filter(f => f.regressionTests?.length).map(f => ({ id: f.id, kind: f.kind, title: f.title, tests: f.regressionTests }));
+  say(json ? { runId: run.runId, regressions: data } : (data.length ? data.map(x => `- ${x.title}\n  ${x.tests.join('\n  ')}`).join('\n') : 'Aucune régression enregistrée.'));
+}
 function prompt() {
   const requested = args.find((arg) => arg.endsWith('.md')) || 'prompts/00-master-orchestrator.md';
   const content = loadPrompt(root, requested);
@@ -92,6 +122,11 @@ switch (command) {
   case 'doctor': doctor(); break;
   case 'audit': audit(); break;
   case 'check': await check(); break;
+  case 'prove': prove(); break;
+  case 'eval': prove(); break;
+  case 'evidence': evidence(); break;
+  case 'regressions': regressions(); break;
+  case 'explain-proof': prove(); break;
   case 'prompt': prompt(); break;
   case '--help':
   case 'help':
@@ -103,7 +138,12 @@ Usage:
   npx hashcode-quality audit [--json]
   npx hashcode-quality check --profile minimal|standard|production|ai [--json]
   npx hashcode-quality check --changed-file=src/foo.ts
-  npx hashcode-quality prompt [prompt-file.md]`);
+  npx hashcode-quality prompt [prompt-file.md]
+  npx hashcode-quality prove [--json]
+  npx hashcode-quality eval [--json]
+  npx hashcode-quality evidence [--json]
+  npx hashcode-quality regressions [--json]
+  npx hashcode-quality explain-proof [--json]`);
     break;
   default:
     console.error(`Commande inconnue: ${command}`);
