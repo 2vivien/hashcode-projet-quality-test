@@ -27,7 +27,7 @@ export function createCheck({ id, category, purpose, risk = 'MEDIUM', command, a
   return { id, category, purpose, risk, command, args, required, destructive };
 }
 
-export function createRequirement({ id, statement, risk = 'MEDIUM', acceptanceCriteria = [], invariants = [], requiredEvidence = [], scope = {} }) {
+export function createRequirement({ id, statement, risk = 'MEDIUM', acceptanceCriteria = [], invariants = [], requiredEvidence = [], scope = {}, expected, schema }) {
   return { id, statement, risk, acceptanceCriteria, invariants, requiredEvidence, scope, expected, schema };
 }
 
