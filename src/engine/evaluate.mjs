@@ -10,19 +10,36 @@ export function evaluateCheck(check, result) {
   })];
   return [createFinding({
     kind: check.required ? FINDING_KIND.CONFIRMED_DEFECT : FINDING_KIND.LIKELY_DEFECT,
-    severity: check.risk === 'HIGH' ? 'HIGH' : 'MEDIUM',
+    severity: check.risk === 'CRITICAL' ? 'CRITICAL' : check.risk === 'HIGH' ? 'HIGH' : 'MEDIUM',
     confidence: 1, title: `Échec du contrôle ${check.id}`,
     summary: result.stderr || `La commande ${result.evidence.command} a échoué.`,
-    evidence: [result.evidence], location: check.id,
+    evidence: [result.evidence], location: check.id, checkId: check.id, requirementId: check.id,
     rootCause: 'À déterminer par analyse du contexte et du diff.',
     consequence: 'Le comportement attendu n’est pas démontré.',
     regressionTests: [`Réexécuter le contrôle ${check.id} après correction.`],
   })];
 }
 
-export function buildGate({ checks, findings, profile }) {
-  const requiredFailures = checks.filter((c, i) => c.required && ![RESULT_STATUS.PASS].includes(c.result?.status));
+export function buildGate({ checks = [], findings = [], proofAssessments = [], profile }) {
+  const requiredFailures = checks.filter(c => c.required && c.result?.status !== RESULT_STATUS.PASS);
   const blockers = findings.filter(f => ['CONFIRMED_DEFECT', 'ENVIRONMENT_BLOCKER'].includes(f.kind) && ['HIGH','CRITICAL'].includes(f.severity));
-  const status = requiredFailures.length || blockers.length ? 'FAIL' : findings.some(f => f.kind === 'LIKELY_DEFECT') ? 'PASS_WITH_RISK' : 'PASS';
-  return { status, profile, checks: checks.map(c => ({ id: c.id, status: c.result?.status || RESULT_STATUS.NOT_RUN })), findings, generatedAt: new Date().toISOString() };
+  const requiredProofFailures = proofAssessments.filter((p, i) => {
+    const check = checks.find(c => c.id === p.checkId) ?? checks[i];
+    const mandatory = Boolean(check?.required) || ['HIGH', 'CRITICAL'].includes(String(check?.risk ?? '').toUpperCase());
+    return mandatory && p.receipt?.status !== 'PROVEN';
+  });
+  const status = requiredFailures.length || blockers.length || requiredProofFailures.length
+    ? 'FAIL'
+    : findings.some(f => f.kind === 'LIKELY_DEFECT') ? 'PASS_WITH_RISK' : 'PASS';
+  const reasons = [
+    ...requiredFailures.map(c => `required check failed: ${c.id}`),
+    ...blockers.map(f => f.title),
+    ...requiredProofFailures.map(p => `required proof not established: ${p.checkId} (${p.receipt?.status ?? 'UNKNOWN'})`)
+  ];
+  return {
+    status, profile,
+    checks: checks.map(c => ({ id: c.id, status: c.result?.status || RESULT_STATUS.NOT_RUN })),
+    proof: { required: requiredProofFailures.length === 0, failures: requiredProofFailures.map(p => ({ checkId: p.checkId, status: p.receipt?.status })) },
+    findings, reasons, generatedAt: new Date().toISOString()
+  };
 }
