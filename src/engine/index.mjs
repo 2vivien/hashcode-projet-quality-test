@@ -10,6 +10,7 @@ import { evaluateCheck, buildGate } from './evaluate.mjs';
 import { planProof } from './proof.mjs';
 import { evaluateOracle } from './oracle.mjs';
 import { buildProofReceipt } from './proof-ledger.mjs';
+import { buildProofGraph } from './proof-graph.mjs';
 
 function gitSha(cwd) {
   const r = spawnSync('git', ['rev-parse', 'HEAD'], { cwd, encoding: 'utf8' });
