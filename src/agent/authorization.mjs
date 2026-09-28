@@ -80,7 +80,7 @@ export async function runAuthorizationMatrix({ baseUrl, matrix = [], fixtures = 
     const started = Date.now();
     try {
       const response = await fetch(url, { method: testCase.method, headers: { accept: 'application/json', ...(headers || {}) }, signal: controller.signal });
-      const body = await response.text();
+      const body = (await response.text()).replace(/Bearer\s+[A-Za-z0-9._~-]+/gi, 'Bearer [REDACTED]').replace(/("?(?:access_token|refresh_token|token|password|secret|api[_-]?key)"?\s*[:=]\s*)["']?[^,"'\\s}]+/gi, '$1[REDACTED]');
       const passed = statusAllowed(response.status, testCase.expected);
       const item = { id: testCase.id, role: testCase.role, ownerRole: testCase.ownerRole || testCase.object?.ownerRole || null, method: testCase.method, path: testCase.path, url, objectType: testCase.objectType || null, objectId: testCase.objectId ?? null, expected: testCase.expected, status: response.status, passed, durationMs: Date.now() - started, bodySample: body.slice(0, 2000) };
       cases.push(item);
