@@ -15,6 +15,7 @@ import { explainProof } from './proof-ledger.mjs';
 import { loadRequirements } from './requirements.mjs';
 import { createFrozenHarness } from './harness.mjs';
 import { buildRegressionPlan } from './regression.mjs';
+import { evidenceIdentity } from './evidence.mjs';
 
 function gitSha(cwd) {
   const r = spawnSync('git', ['rev-parse', 'HEAD'], { cwd, encoding: 'utf8' });
@@ -117,6 +118,7 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
       proofGraphHash: proofGraph.graphHash ?? null,
       regression: findings.filter(f => f.kind === 'CONFIRMED_DEFECT').map(f => ({ findingId: f.id, tests: f.regressionTests })),
       evidenceComplete: checks.every(c => Boolean(c.result?.evidence)),
+      evidenceIdentity: evidenceIdentity(checks.map(c => c.result?.evidence).filter(Boolean)),
       proofSummary: {
         proven: proofAssessments.filter(p => p.receipt.status === 'PROVEN').length,
         notProven: proofAssessments.filter(p => p.receipt.status === 'NOT_PROVEN').length,
