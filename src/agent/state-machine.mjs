@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { resolveRoleHeaders } from './fixtures.mjs';
 
 function hash(value) {
   return createHash('sha256').update(JSON.stringify(value ?? null)).digest('hex').slice(0, 16);
@@ -59,7 +60,8 @@ export async function runStateMachine({ baseUrl, workflows = [], fixtures = {}, 
       const timer = setTimeout(() => controller.abort(), timeoutMs);
       const started = Date.now();
       try {
-        const response = await fetch(url, { method: definition.method, headers: { accept: 'application/json', ...(definition.headers || {}) }, signal: controller.signal });
+        const roleHeaders = definition.role ? (resolveRoleHeaders(definition.role, fixtures) || {}) : {};
+      const response = await fetch(url, { method: definition.method, headers: { accept: 'application/json', ...roleHeaders, ...(definition.headers || {}) }, signal: controller.signal });
         const text = await response.text();
         let body = null; try { body = JSON.parse(text); } catch {}
         for (const item of extractIds(body)) state[item.key] = item.value;
