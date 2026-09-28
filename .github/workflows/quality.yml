@@ -32,6 +32,15 @@ jobs:
           node --check src/engine/planner.mjs
           node --check src/engine/runner.mjs
           node --check src/engine/evaluate.mjs
+          node --check src/engine/oracle.mjs
+          node --check src/engine/proof-ledger.mjs
+          node --check src/engine/proof-graph.mjs
+          node --check src/engine/proof-engine.mjs
+          node --check src/engine/harness.mjs
+          node --check src/engine/dataset.mjs
+          node --check src/engine/evidence.mjs
+          node --check src/engine/requirements.mjs
+          node --check src/engine/regression.mjs
       - name: Engine unit tests
         run: npm test
       - name: CLI smoke test
