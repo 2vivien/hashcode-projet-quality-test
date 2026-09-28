@@ -4,6 +4,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { detectStack, PROFILES } from './index.mjs';
+import { executeQuality, loadPrompt } from './engine/index.mjs';
 
 const cwd = process.cwd();
 const args = process.argv.slice(2);
@@ -14,17 +15,17 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 
 function say(data) { console.log(json ? JSON.stringify(data, null, 2) : data); }
 function toolExists(name) { return spawnSync(process.platform === 'win32' ? 'where' : 'which', [name], { stdio: 'ignore' }).status === 0; }
-function run(commandName, commandArgs = []) { return spawnSync(commandName, commandArgs, { cwd, stdio: 'inherit', shell: process.platform === 'win32' }).status ?? 1; }
-function pm(stack) { return stack.packageManager === 'unknown' ? 'npm' : stack.packageManager; }
-function packageJson() { try { return JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf8')); } catch { return null; } }
-function projectScript(name, stack) {
-  const pkg = packageJson();
-  if (!pkg?.scripts?.[name]) return null;
-  return run(pm(stack), ['run', name]);
-}
 
 function init() {
-  const config = `version: 1\nname: hashcode-universal-quality\nprofile: standard\n\npolicies:\n  language: fr\n  evidence_required: true\n  no_auto_delete: true\n  issue_on_confirmed_defect: true\n`;
+  const config = `version: 2
+name: hashcode-universal-quality
+profile: standard
+
+policies:
+  evidence_required: true
+  no_auto_delete: true
+  require_regression_test_for_confirmed_bug: true
+`;
   const path = join(cwd, 'quality.yaml');
   if (!existsSync(path)) writeFileSync(path, config);
   say(json ? { initialized: true, file: 'quality.yaml' } : 'HashCode Quality initialisé dans ce projet.');
@@ -32,58 +33,77 @@ function init() {
 
 function doctor() {
   const stack = detectStack(cwd);
-  const tools = ['node', 'pnpm', 'npm', 'git', 'knip', 'eslint', 'tsc', 'vitest', 'playwright', 'gitleaks', 'semgrep', 'trivy', 'syft'];
+  const tools = ['node', 'pnpm', 'npm', 'git', 'knip', 'eslint', 'tsc', 'vitest', 'playwright', 'gitleaks', 'semgrep', 'trivy', 'syft', 'k6'];
   const result = Object.fromEntries(tools.map((tool) => [tool, toolExists(tool)]));
-  say(json ? { stack, tools: result } : `${JSON.stringify(stack, null, 2)}\n\nOutils disponibles:\n${Object.entries(result).map(([k,v]) => `- ${k}: ${v ? 'OK' : 'absent'}`).join('\n')}`);
+  say(json ? { stack, tools: result } : `${JSON.stringify(stack, null, 2)}
+
+Outils disponibles:
+${Object.entries(result).map(([k,v]) => `- ${k}: ${v ? 'OK' : 'absent'}`).join('\n')}`);
 }
 
 function audit() {
   const stack = detectStack(cwd);
   const recommendations = [];
   if (stack.nextjs || stack.react || stack.typescript) recommendations.push('Knip', 'ESLint', 'TypeScript', 'Vitest', 'Playwright');
-  if (stack.tailwind) recommendations.push('Contrôles Tailwind + audit CSS advisory');
-  if (stack.prisma) recommendations.push('Prisma validate + migrations + tests PostgreSQL');
+  if (stack.prisma) recommendations.push('Prisma validate + migrations + PostgreSQL integration tests');
   if (stack.python) recommendations.push('Ruff', 'Pyright/mypy', 'pytest', 'Semgrep');
   if (stack.docker) recommendations.push('Trivy', 'Syft');
-  if (stack.kubernetes) recommendations.push('Trivy', 'Checkov');
-  if (stack.ai) recommendations.push('Évaluation IA, prompt injection, autorisation outils, fuite de données, coût/latence');
+  if (stack.ai) recommendations.push('LLM evaluation, prompt injection, tool authorization, data leakage, cost/latency');
   recommendations.push('Gitleaks', 'Semgrep');
   const unique = [...new Set(recommendations)];
-  say(json ? { stack, recommendations: unique } : `HASHCODE QUALITY AUDIT\n\nStack détectée:\n${JSON.stringify(stack, null, 2)}\n\nContrôles recommandés:\n${unique.map(x => `- ${x}`).join('\n')}`);
+  say(json ? { stack, recommendations: unique } : `HASHCODE QUALITY AUDIT
+
+Stack détectée:
+${JSON.stringify(stack, null, 2)}
+
+Contrôles recommandés:
+${unique.map(x => `- ${x}`).join('\n')}`);
 }
 
-function check() {
+async function check() {
   const profile = PROFILES[profileArg] ? profileArg : 'standard';
-  const stack = detectStack(cwd);
-  const failures = [];
-  for (const script of ['lint', 'typecheck']) {
-    const code = projectScript(script, stack);
-    if (code !== null && code !== 0) failures.push(script);
+  const changedFiles = args.filter((x) => x.startsWith('--changed-file=')).map((x) => x.slice(15));
+  const result = await executeQuality({ cwd, profile, changedFiles });
+  if (json) {
+    say(result);
+  } else {
+    console.log(`HASHCODE QUALITY ENGINE ${result.engineVersion}
+Profile: ${profile}
+Risk: ${result.project.inferredRisk}
+Checks: ${result.checks.length}
+Findings: ${result.findings.length}
+Gate: ${result.gate.status}
+Evidence: ${result.intelligence.evidenceComplete ? 'complete' : 'incomplete'}`);
+    for (const c of result.checks) console.log(`- ${c.id}: ${c.result.status} (${c.durationMs}ms)`);
+    for (const f of result.findings) console.log(`- [${f.kind}] ${f.title}`);
   }
-  if (profile !== 'minimal') {
-    const code = projectScript('test', stack);
-    if (code !== null && code !== 0) failures.push('test');
-  }
-  say(json ? { profile, stack, failures, status: failures.length ? 'FAIL' : 'PASS_OR_NOT_VERIFIED' } : `Profile: ${profile}\nStatut: ${failures.length ? 'FAIL' : 'PASS_OR_NOT_VERIFIED'}\n${failures.length ? `Échecs: ${failures.join(', ')}` : 'Aucun échec détecté par les scripts disponibles.'}`);
-  process.exitCode = failures.length ? 1 : 0;
+  process.exitCode = result.gate.status === 'FAIL' ? 1 : 0;
 }
 
 function prompt() {
-  const requested = args.find((arg) => arg.endsWith('.md')) || '00-master-orchestrator.md';
-  const path = join(root, 'prompts', requested);
-  if (!existsSync(path)) { console.error(`Prompt introuvable: ${requested}`); process.exitCode = 2; return; }
-  console.log(readFileSync(path, 'utf8'));
+  const requested = args.find((arg) => arg.endsWith('.md')) || 'prompts/00-master-orchestrator.md';
+  const content = loadPrompt(root, requested);
+  if (!content) { console.error(`Prompt introuvable: ${requested}`); process.exitCode = 2; return; }
+  console.log(content);
 }
 
 switch (command) {
   case 'init': init(); break;
   case 'doctor': doctor(); break;
   case 'audit': audit(); break;
-  case 'check': check(); break;
+  case 'check': await check(); break;
   case 'prompt': prompt(); break;
   case '--help':
   case 'help':
-    console.log('HashCode Quality CLI\n\nUsage:\n  npx hashcode-quality init\n  npx hashcode-quality doctor\n  npx hashcode-quality audit [--json]\n  npx hashcode-quality check --profile minimal|standard|production|ai [--json]\n  npx hashcode-quality prompt [prompt-file.md]\n\nÉquivalent pnpm:\n  pnpm dlx hashcode-quality audit\n');
+    console.log(`HashCode Quality CLI
+
+Usage:
+  npx hashcode-quality init
+  npx hashcode-quality doctor [--json]
+  npx hashcode-quality audit [--json]
+  npx hashcode-quality check --profile minimal|standard|production|ai [--json]
+  npx hashcode-quality check --changed-file=src/foo.ts
+  npx hashcode-quality prompt [prompt-file.md]`);
     break;
   default:
     console.error(`Commande inconnue: ${command}`);
