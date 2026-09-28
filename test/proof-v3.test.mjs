@@ -24,8 +24,9 @@ test('proof graph contains requirement, criteria, invariant, oracle, execution, 
   const requirements = [{ id: 'login', statement: 'User can log in', risk: 'HIGH', acceptanceCriteria: ['returns session'], invariants: ['session belongs to user'] }];
   const assessment = { checkId: 'login', plan: { oracles: [{ type: 'INVARIANT', criterion: 'session belongs to user', evaluator: 'deterministic', evidenceRequired: ['databaseState'] }] }, receipt: { status: 'PROVEN', confidence: 1, proofHash: 'abc', oracles: [{ verdict: 'PASS', confidence: 1 }] } };
   const checks = [{ id: 'login', purpose: 'User can log in', risk: 'HIGH', category: 'auth', result: { status: 'PASS', exitCode: 0, evidence: { id: 'ev1', tool: 'shell', command: 'test', timestamp: '2026-09-28T00:00:00Z' } } }];
-  const graph = buildProofGraph({ requirements, proofAssessments: [assessment], checks, gate: { status: 'PASS', reasons: [] }, gitSha: 'abc' });
+  const graph = buildProofGraph({ requirements, proofAssessments: [assessment], checks, gate: { status: 'PASS', reasons: [] }, harness: { id: 'h', version: '1', harnessHash: 'hash', frozen: true }, gitSha: 'abc' });
   for (const type of ['requirement','acceptance_criterion','invariant','risk','oracle','execution','evidence','evaluation','proof','gate']) assert.ok(graph.nodes.some(n => n.type === type), `missing ${type}`);
+  assert.ok(graph.nodes.some(n => n.type === 'harness'));
   assert.match(graph.graphHash, /^[a-f0-9]{64}$/);
 });
 
