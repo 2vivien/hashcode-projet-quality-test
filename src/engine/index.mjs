@@ -12,6 +12,8 @@ import { evaluateOracle } from './oracle.mjs';
 import { buildProofReceipt } from './proof-ledger.mjs';
 import { buildProofGraph } from './proof-graph.mjs';
 import { explainProof } from './proof-ledger.mjs';
+import { loadRequirements } from './requirements.mjs';
+import { createFrozenHarness } from './harness.mjs';
 
 function gitSha(cwd) {
   const r = spawnSync('git', ['rev-parse', 'HEAD'], { cwd, encoding: 'utf8' });
@@ -36,6 +38,7 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
   const project = discoverProject(cwd);
   const stack = detectStack(cwd);
   const config = loadQualityConfig(cwd);
+  const configuredRequirements = loadRequirements(config);
   const detectedChanges = changedFiles.length ? changedFiles : gitChangedFiles(cwd);
   const initialPlan = buildPlan(project, profile);
   const plan = selectChecks(initialPlan, { profile, changedFiles: detectedChanges });
@@ -54,15 +57,27 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
     findings.push(...evaluateCheck(check, result));
   }
 
-  const proofPlans = checks.map(check => planProof({
+  const requirements = checks.map(check => configuredRequirements.find(r => r.id === check.id) ?? {
     id: check.id,
     statement: check.purpose,
-    expected: 0,
-    requiredEvidence: ['exitCode']
-  }, {
+    risk: check.risk,
+    acceptanceCriteria: [],
+    invariants: [],
+    requiredEvidence: ['exitCode'],
+    scope: { category: check.category },
+    expected: 0
+  });
+  const proofPlans = requirements.map(requirement => planProof(requirement, {
     risk: check.risk,
     capabilities: { semanticEvaluator: false }
   }));
+  const harness = createFrozenHarness({
+    id: `run-${startedAt}`,
+    oraclePlans: proofPlans,
+    thresholds: { highRiskMinimumConfidence: 0.9 },
+    policy: { noSelfModification: true, evaluatorIsOutOfBand: true }
+  });
+  const runId = `run_${startedAt.replace(/[^0-9]/g, '')}_${gitSha(cwd)?.slice(0, 12) ?? 'nogit'}`;
   const proofAssessments = checks.map((check, i) => {
     const evidence = check.result?.evidence ? [check.result.evidence] : [];
     const plan = proofPlans[i];
@@ -75,24 +90,25 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
       checkId: check.id,
       plan,
       receipt: buildProofReceipt({
-        requirement: { id: check.id, statement: check.purpose, requiredEvidence: ['exitCode'] },
+        requirement: requirements[i],
         risk: check.risk,
         oraclePlan: plan.oracles,
         oracleResults,
         evidence,
+        runId,
         gitSha: gitSha(cwd)
       })
     };
   });
   const gate = buildGate({ checks, findings, profile });
-  const proofGraph = buildProofGraph({ checks, proofAssessments, findings, gate, gitSha: gitSha(cwd) });
+  const proofGraph = buildProofGraph({ checks, proofAssessments, requirements, findings, gate, gitSha: gitSha(cwd) });
   const finishedAt = new Date().toISOString();
   const result = {
     engineVersion: '2.2.0-gold',
-    startedAt, finishedAt, gitSha: gitSha(cwd),
+    startedAt, finishedAt, runId, gitSha: gitSha(cwd),
     project: { ...project, stack, inferredRisk: inferRisk(project) },
     plan: { selected: plan.checks.map(x => x.id), totalAvailable: initialPlan.checks.length, gaps: plan.gaps },
-    checks, findings, proofAssessments, proofGraph, gate,
+    checks, findings, requirements, proofAssessments, proofGraph, harness, gate,
     intelligence: {
       traceability: 'requirement -> risk -> oracle -> execution -> evidence -> evaluation -> proof -> regression -> gate',
       proofGraphHash: proofGraph.graphHash ?? null,
