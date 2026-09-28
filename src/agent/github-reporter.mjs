@@ -51,6 +51,20 @@ export async function reportFindings({ findings = [], repo, token, branch = 'mai
   const failures = [];
   let openIssues;
   try { openIssues = await gh(token, repo, '/issues?state=open&per_page=100'); } catch (e) { return { status: 'BLOCKED', reason: e.message, issues: [] }; }
+  if (labels.length) {
+    try {
+      const existing = await gh(token, repo, '/labels?per_page=100');
+      const names = new Set(existing.map(label => label.name));
+      for (const label of labels) {
+        if (!names.has(label)) {
+          try {
+            await gh(token, repo, '/labels', { method: 'POST', body: JSON.stringify({ name: label, color: '1f6feb', description: 'HashCode autonomous QA' }) });
+          } catch {}
+        }
+      }
+    } catch {}
+  }
+
   for (const finding of findings) {
     const fp = fingerprint(finding);
     if (openIssues.some(function (i) { return String(i.body || '').includes('fingerprint:' + fp); })) { issues.push({ fingerprint: fp, status: 'DUPLICATE' }); continue; }
