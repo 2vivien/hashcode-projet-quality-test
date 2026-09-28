@@ -30,6 +30,8 @@ function issueBody(finding, meta, artifactUrls) {
     '### Reproduction',
     'METHOD: ' + (e.method || 'GET'),
     'URL: ' + (e.url || 'See captured trace.'),
+    e.role ? 'ROLE: ' + e.role : '',
+    e.objectId != null ? 'OBJECT_ID: ' + e.objectId : '',
     '',
     '### Evidence'
   ];
