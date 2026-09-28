@@ -31,6 +31,6 @@ export function createRequirement({ id, statement, risk = 'MEDIUM', acceptanceCr
   return { id, statement, risk, acceptanceCriteria, invariants, requiredEvidence, scope, expected, schema };
 }
 
-export function createFinding({ kind, severity = 'MEDIUM', confidence = 1, title, summary, evidence = [], rootCause = null, consequence = null, location = null, regressionTests = [] }) {
-  return { id: `finding_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, kind, severity, confidence, title, summary, evidence, rootCause, consequence, location, regressionTests, createdAt: nowIso() };
+export function createFinding({ kind, severity = 'MEDIUM', confidence = 1, title, summary, evidence = [], rootCause = null, consequence = null, location = null, regressionTests = [], checkId = null, requirementId = null, impact = null, recommendedSolution = null, acceptanceCriteria = [], verification = null, residualRisk = null }) {
+  return { id: `finding_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, kind, severity, confidence, title, summary, evidence, rootCause, consequence, location, checkId, requirementId, impact, recommendedSolution, acceptanceCriteria, verification, residualRisk, regressionTests, createdAt: nowIso() };
 }
