@@ -45,10 +45,12 @@ export function buildAuthorizationMatrix({ endpoints = [], fixtures = {} } = {})
         .filter(x => x.ownerRole === role.name);
       for (const object of owned.slice(0, 1)) {
         const own = { id: 'auth-' + hash({ endpoint, role: role.name, object: object.id, expected: 'allow' }), method: endpoint.method, path: endpoint.path, role: role.name, objectType, objectId: object.id, expected: 'allow' };
-        if (!existingKeys.has([own.method, own.path, own.role, own.objectId, own.expected].join('|'))) matrix.push(fixtureForCase(fixtures, own));
+        const ownKey = [own.method, own.path, own.role, own.objectId, own.expected].join('|');
+        if (!existingKeys.has(ownKey)) { matrix.push(fixtureForCase(fixtures, own)); existingKeys.add(ownKey); }
         for (const other of (fixtures.roles || []).filter(r => r.name !== role.name).slice(0, 1)) {
           const foreign = { id: 'auth-' + hash({ endpoint, role: other.name, object: object.id, expected: 'deny' }), method: endpoint.method, path: endpoint.path, role: other.name, objectType, objectId: object.id, expected: 'deny', ownerRole: role.name };
-          if (!existingKeys.has([foreign.method, foreign.path, foreign.role, foreign.objectId, foreign.expected].join('|'))) matrix.push(fixtureForCase(fixtures, foreign));
+          const foreignKey = [foreign.method, foreign.path, foreign.role, foreign.objectId, foreign.expected].join('|');
+          if (!existingKeys.has(foreignKey)) { matrix.push(fixtureForCase(fixtures, foreign)); existingKeys.add(foreignKey); }
         }
       }
     }
