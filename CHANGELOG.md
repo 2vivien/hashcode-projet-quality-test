@@ -16,6 +16,9 @@
 - CLI commands `agent` and `qa-agent`.
 - Autonomous QA architecture documentation and tests.
 
+### Verification
+- CI includes syntax validation and smoke execution for the Autonomous QA Agent.
+
 ### Safety
 - Mutation API execution is opt-in.
 - GitHub issue creation is opt-in.
