@@ -9,6 +9,9 @@ export { createFrozenHarness, verifyFrozenHarness, detectHarnessMutation } from 
 export { createDataset, loadDataset, verifyDataset } from './engine/dataset.mjs';
 export { buildProofEngine, proveRequirement } from './engine/proof-engine.mjs';
 export { evaluateRepeated, compareDifferential, evaluateMetamorphic, evaluateProperty } from './engine/evaluators.mjs';
+export { runAutonomousQA } from './agent/index.mjs';
+export { discoverApplicationSurface, inferRoles } from './agent/route-discovery.mjs';
+export { generateScenarios, prioritizeScenarios } from './agent/scenarios.mjs';
 
 export const PROFILES = {
   minimal: ['lint', 'typecheck', 'unit', 'dependency_hygiene'],
