@@ -217,4 +217,4 @@ HashCode Quality is released under the MIT License. See `LICENSE`.
 
 ## Status
 
-The npm package and CLI are the public foundation of the HashCode Quality project. The broader multi-tool quality engine is being developed incrementally in the 2.x series.
+The npm package and CLI are the public foundation of the HashCode Quality project. The Proof Engine v3 is the evidence and verification foundation for the broader multi-tool quality engine.
