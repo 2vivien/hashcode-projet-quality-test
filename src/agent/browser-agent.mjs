@@ -5,14 +5,16 @@ async function loadPlaywright() {
   try { return await import('playwright'); } catch { return null; }
 }
 
-export async function exploreBrowser({ baseUrl, routes = [], outDir, maxPages = 30, maxDepth = 2, timeoutMs = 15000, screenshotAll = false } = {}) {
+export async function exploreBrowser({ baseUrl, routes = [], roles = [], roleHeaders = {}, outDir, maxPages = 30, maxDepth = 2, timeoutMs = 15000, screenshotAll = false } = {}) {
   const playwright = await loadPlaywright();
   if (!playwright) return { status: 'MISSING_CAPABILITY', reason: 'Playwright is not installed.', pages: [], findings: [] };
   if (!baseUrl) return { status: 'BLOCKED', reason: 'No base URL configured.', pages: [], findings: [] };
   mkdirSync(outDir, { recursive: true });
   const browser = await playwright.chromium.launch({ headless: true });
   const context = await browser.newContext({ ignoreHTTPSErrors: true });
-  const queue = routes.map(function (r) { return { url: new URL(r.path, baseUrl).href, depth: 0 }; });
+  const roleNames = ['anonymous', ...roles.map(function (r) { return r.role || r; }).filter(Boolean)];
+  const queue = [];
+  for (const role of roleNames) for (const r of routes) queue.push({ url: new URL(r.path, baseUrl).href, depth: 0, role });
   const seen = new Set();
   const pages = [];
   const findings = [];
@@ -23,6 +25,8 @@ export async function exploreBrowser({ baseUrl, routes = [], outDir, maxPages = 
       if (seen.has(item.url) || item.depth > maxDepth) continue;
       seen.add(item.url);
       const page = await context.newPage();
+      const headers = roleHeaders[item.role] || {};
+      if (Object.keys(headers).length) await page.setExtraHTTPHeaders(headers);
       const consoleErrors = [];
       const pageErrors = [];
       const failedRequests = [];
@@ -54,13 +58,13 @@ export async function exploreBrowser({ baseUrl, routes = [], outDir, maxPages = 
         if (httpStatus >= 400 && httpStatus !== 404) { status = 'FAIL'; error = error || 'Unexpected HTTP ' + httpStatus + '.'; }
         if (screenshotAll || status === 'FAIL') await page.screenshot({ path: screenshot, fullPage: true });
         await context.tracing.stop({ path: trace });
-        pages.push({ url: item.url, depth: item.depth, httpStatus, title, status, screenshot: existsSync(screenshot) ? screenshot : null, trace, consoleErrors, pageErrors, failedRequests, serverErrors });
-        if (status === 'FAIL') findings.push({ type: 'BROWSER_FAILURE', severity: serverErrors.length ? 'HIGH' : 'MEDIUM', title: 'Browser anomaly on ' + item.url, summary: error, evidence: { url: item.url, httpStatus, screenshot: existsSync(screenshot) ? screenshot : null, trace, consoleErrors, pageErrors, failedRequests, serverErrors } });
+        pages.push({ url: item.url, depth: item.depth, role: item.role, httpStatus, title, status, screenshot: existsSync(screenshot) ? screenshot : null, trace, consoleErrors, pageErrors, failedRequests, serverErrors });
+        if (status === 'FAIL') findings.push({ type: 'BROWSER_FAILURE', severity: serverErrors.length ? 'HIGH' : 'MEDIUM', title: 'Browser anomaly on ' + item.url + ' [' + item.role + ']' , summary: error, evidence: { url: item.url, httpStatus, screenshot: existsSync(screenshot) ? screenshot : null, trace, consoleErrors, pageErrors, failedRequests, serverErrors } });
       } catch (e) {
         try { await page.screenshot({ path: screenshot, fullPage: true }); } catch {}
         try { await context.tracing.stop({ path: trace }); } catch {}
-        pages.push({ url: item.url, depth: item.depth, httpStatus: null, title: null, status: 'FAIL', screenshot, trace, error: e.message, consoleErrors, pageErrors, failedRequests, serverErrors });
-        findings.push({ type: 'BROWSER_FAILURE', severity: 'HIGH', title: 'Navigation failure on ' + item.url, summary: e.message, evidence: { url: item.url, screenshot, trace, consoleErrors, pageErrors, failedRequests, serverErrors } });
+        pages.push({ url: item.url, depth: item.depth, role: item.role, httpStatus: null, title: null, status: 'FAIL', screenshot, trace, error: e.message, consoleErrors, pageErrors, failedRequests, serverErrors });
+        findings.push({ type: 'BROWSER_FAILURE', severity: 'HIGH', title: 'Navigation failure on ' + item.url + ' [' + item.role + ']' , summary: e.message, evidence: { url: item.url, screenshot, trace, consoleErrors, pageErrors, failedRequests, serverErrors } });
       } finally {
         await page.close().catch(function () {});
       }
