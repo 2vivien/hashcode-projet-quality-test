@@ -170,6 +170,7 @@ npx hashcode-quality prove
 npx hashcode-quality evidence
 npx hashcode-quality regressions
 npx hashcode-quality explain-proof --json
+npx hashcode-quality verify --json
 ```
 
 The commands inspect the latest persisted run under:
