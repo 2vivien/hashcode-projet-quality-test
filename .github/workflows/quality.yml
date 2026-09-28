@@ -41,6 +41,7 @@ jobs:
           node --check src/engine/evidence.mjs
           node --check src/engine/requirements.mjs
           node --check src/engine/regression.mjs
+          node --check src/engine/evaluators.mjs
       - name: Engine unit tests
         run: npm test
       - name: CLI smoke test
