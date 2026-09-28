@@ -66,7 +66,9 @@ export async function runAuthorizationMatrix({ baseUrl, matrix = [], fixtures = 
     }
     const headers = resolveRoleHeaders(testCase.role, fixtures);
     if (headers == null && testCase.role !== 'anonymous') {
-      cases.push({ ...testCase, status: 'MISSING_CREDENTIAL', expected: testCase.expected });
+      const blocked = { ...testCase, status: 'MISSING_CREDENTIAL', expected: testCase.expected };
+      cases.push(blocked);
+      findings.push({ type: 'AUTHORIZATION_TEST_BLOCKED', severity: 'MEDIUM', title: 'Missing test credential for role: ' + testCase.role, summary: 'The authorization case could not execute because the configured role has no credential in the environment.', evidence: { role: testCase.role, caseId: testCase.id }, requirementId: 'authorization:' + testCase.id });
       continue;
     }
     const values = { ...(testCase.params || {}) };
