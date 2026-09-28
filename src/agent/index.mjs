@@ -7,6 +7,7 @@ import { exploreBrowser } from './browser-agent.mjs';
 import { probeApi } from './api-agent.mjs';
 import { loadAuthorizationFixtures, listFixtureRoles, resolveRoleHeaders } from './fixtures.mjs';
 import { buildAuthorizationMatrix, runAuthorizationMatrix } from './authorization.mjs';
+import { runFunctionAuthorization, runPropertyAuthorization } from './access-control.mjs';
 import { buildStateMachine, runStateMachine } from './state-machine.mjs';
 import { buildAuthorizationProofSet } from './proof.mjs';
 import { reportFindings } from './github-reporter.mjs';
@@ -114,6 +115,22 @@ export async function runAutonomousQA({
       allowMutations
     });
 
+    const functionAuthorization = await runFunctionAuthorization({
+      baseUrl,
+      cases: fixtures.functionAuthorization || [],
+      fixtures,
+      timeoutMs,
+      allowMutations
+    });
+
+    const propertyAuthorization = await runPropertyAuthorization({
+      baseUrl,
+      cases: fixtures.properties || [],
+      fixtures,
+      timeoutMs,
+      allowMutations
+    });
+
     const statePlan = buildStateMachine({
       endpoints: [...surface.openapi, ...surface.apiRoutes],
       workflows: fixtures.workflows,
@@ -140,6 +157,8 @@ export async function runAutonomousQA({
       ...browser.findings,
       ...api.findings,
       ...authorization.findings,
+      ...functionAuthorization.findings,
+      ...propertyAuthorization.findings,
       ...stateMachine.findings
     ].map(f => ({ ...f, confidence: f.confidence == null ? 1 : f.confidence }));
 
@@ -157,7 +176,9 @@ export async function runAutonomousQA({
         fixtureFile: fixtures.path,
         matrixSize: authorizationMatrix.length,
         cases: authorization.cases,
-        proofs: authorizationProofs.map(p => p.receipt)
+        proofs: authorizationProofs.map(p => p.receipt),
+        function: functionAuthorization,
+        properties: propertyAuthorization
       },
       stateMachine,
       browser,
