@@ -27,6 +27,10 @@ export function createCheck({ id, category, purpose, risk = 'MEDIUM', command, a
   return { id, category, purpose, risk, command, args, required, destructive };
 }
 
+export function createRequirement({ id, statement, risk = 'MEDIUM', acceptanceCriteria = [], invariants = [], requiredEvidence = [], scope = {} }) {
+  return { id, statement, risk, acceptanceCriteria, invariants, requiredEvidence, scope };
+}
+
 export function createFinding({ kind, severity = 'MEDIUM', confidence = 1, title, summary, evidence = [], rootCause = null, consequence = null, location = null, regressionTests = [] }) {
   return { id: `finding_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, kind, severity, confidence, title, summary, evidence, rootCause, consequence, location, regressionTests, createdAt: nowIso() };
 }
