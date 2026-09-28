@@ -96,6 +96,7 @@ Final quality gate
 | `evidence` | Lists execution evidence captured by the engine |
 | `regressions` | Lists generated regression cases |
 | `explain-proof` | Shows the auditable proof explanation |
+| `verify` | Verifies persisted graph, harness and evidence integrity |
 
 Machine-readable output is available with `--json` for supported commands.
 
@@ -144,6 +145,7 @@ npx hashcode-quality prove
 npx hashcode-quality evidence
 npx hashcode-quality regressions
 npx hashcode-quality explain-proof --json
+npx hashcode-quality verify --json
 ```
 
 ## Profiles
