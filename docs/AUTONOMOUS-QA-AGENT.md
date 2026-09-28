@@ -91,19 +91,19 @@ A BOLA test is:
     Owner identity -> Object A (owned) -> expected ALLOW
                    -> Object B (foreign) -> expected DENY
 
-This directly targets OWASP API1:2023. OWASP describes BOLA as manipulating an object identifier to access another user's object and recommends authorization checks for every endpoint that acts on user-supplied object identifiers. citeturn1search3turn0search14
+This directly targets OWASP API1:2023. OWASP describes BOLA as manipulating an object identifier to access another user's object and recommends authorization checks for every endpoint that acts on user-supplied object identifiers.
 
 ### Function-level authorization
 
-Explicit functionAuthorization cases test role-to-function boundaries. This targets BFLA: a regular role accessing an administrative or otherwise restricted function. OWASP recommends testing role/group hierarchies and not assuming that administrative functions can be identified safely from URL naming alone. citeturn1search0
+Explicit functionAuthorization cases test role-to-function boundaries. This targets BFLA: a regular role accessing an administrative or otherwise restricted function. OWASP recommends testing role/group hierarchies and not assuming that administrative functions can be identified safely from URL naming alone.
 
 ### Property-level authorization
 
-Explicit properties cases can declare sensitive fields that a role must never receive. This targets API3:2023, which covers unauthorized object properties and mass-assignment style authorization failures. citeturn1search2
+Explicit properties cases can declare sensitive fields that a role must never receive. This targets API3:2023, which covers unauthorized object properties and mass-assignment style authorization failures.
 
 ### Stateful API testing
 
-The state-machine layer executes multi-step workflows and carries identifiers observed in earlier responses into later requests. Schemathesis uses the same core principle: stateful testing chains operations using real data from responses, with OpenAPI links and dependency analysis used to discover relationships. citeturn0search8turn0search0
+The state-machine layer executes multi-step workflows and carries identifiers observed in earlier responses into later requests. Schemathesis uses the same core principle: stateful testing chains operations using real data from responses, with OpenAPI links and dependency analysis used to discover relationships.
 
 HashCode accepts explicit workflows when business semantics are known and can also build conservative automatic chains from discovered API operations.
 
