@@ -1,4 +1,4 @@
-# HASHCODE — Test Intelligence Engine v2.0 GOLD
+# HASHCODE — Test Intelligence & Proof Engine v3.0 GOLD
 
 ## Mission
 
@@ -50,6 +50,11 @@ The engine must behave as a senior Test Architect, Quality Engineer, Security Te
 - Every confirmed defect should produce a regression test when technically applicable.
 - Prefer the smallest test suite that provides strong protection.
 - Increase test depth when risk, complexity, change impact or uncertainty increases.
+- Treat the evaluation harness as an independent contract: the code under test must not redefine its own oracle, dataset, thresholds or evaluator.
+- Hash oracle definitions, datasets and evidence so proof is reproducible.
+- A proof receipt must explicitly state what was verified and what remains unproven.
+- For critical requirements, require independent proof signals; disagreement is inconclusive.
+- Prefer deterministic, reference-based or invariant oracles before semantic judges.
 
 ---
 
@@ -98,6 +103,16 @@ RE-RUN AFFECTED PROTECTION
 ```
 
 Testing is a learning loop, not a one-time command.
+
+The proof lifecycle is:
+
+```text
+REQUIREMENT → RISK → ACCEPTANCE CRITERIA / INVARIANTS → ORACLE
+→ DATASET → EXECUTION → EVIDENCE → EVALUATION → PROOF
+→ REGRESSION → QUALITY GATE
+```
+
+The evaluator is part of the evidence contract. It must remain outside the candidate behavior being judged.
 
 ---
 
