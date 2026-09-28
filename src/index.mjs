@@ -47,3 +47,5 @@ export { buildAuthorizationMatrix, runAuthorizationMatrix } from './agent/author
 export { runFunctionAuthorization, runPropertyAuthorization } from './agent/access-control.mjs';
 export { buildStateMachine, runStateMachine } from './agent/state-machine.mjs';
 export { buildAuthorizationProof, buildAuthorizationProofSet } from './agent/proof.mjs';
+
+export { scoreScenario, prioritizeByRisk } from './agent/risk.mjs';
