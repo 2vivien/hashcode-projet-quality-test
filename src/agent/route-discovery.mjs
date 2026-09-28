@@ -73,6 +73,12 @@ function discoverOpenApi(cwd, files) {
   return specs;
 }
 
+function discoverTestedRoutes(cwd, files) {
+  const tests = files.filter(function (f) { return /(?:test|spec|e2e)\\.(?:ts|tsx|js|jsx|mjs|cjs)$|(?:^|\\/)(?:tests?|e2e)\\//i.test(relative(cwd, f)); });
+  const text = tests.map(function (f) { return readFileSync(f, 'utf8'); }).join('\\n');
+  return { files: tests.map(function (f) { return relative(cwd, f); }), routes: [...text.matchAll(/['\"`]\\/(?:[a-zA-Z0-9:_*.-]+(?:\\/[a-zA-Z0-9:_*.-]+)*)?['\"`]/g)].map(function (m) { return m[0].slice(1, -1); }) };
+}
+
 export function discoverApplicationSurface(cwd = process.cwd()) {
   const files = walk(cwd);
   const routes = [];
@@ -86,8 +92,15 @@ export function discoverApplicationSurface(cwd = process.cwd()) {
       for (const method of methods) apis.push({ path: api, method, source: relative(cwd, file) });
     }
   }
+  const uniqueRoutes = [...new Map(routes.map(function (x) { return [x.path, x]; })).values()].sort(function (a, b) { return a.path.localeCompare(b.path); });
+  const tested = discoverTestedRoutes(cwd, files);
+  const coveredRoutes = uniqueRoutes.filter(function (r) { return tested.routes.includes(r.path); }).map(function (r) { return r.path; });
+  const uncoveredRoutes = uniqueRoutes.filter(function (r) { return !tested.routes.includes(r.path); }).map(function (r) { return r.path; });
   return {
-    routes: [...new Map(routes.map(function (x) { return [x.path, x]; })).values()].sort(function (a, b) { return a.path.localeCompare(b.path); }),
+    routes: uniqueRoutes,
+    coveredRoutes,
+    uncoveredRoutes,
+    testFiles: tested.files,
     apiRoutes: [...new Map(apis.map(function (x) { return [x.method + ':' + x.path, x]; })).values()],
     openapi: discoverOpenApi(cwd, files),
     filesScanned: files.length
