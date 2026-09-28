@@ -58,7 +58,8 @@
     "eval": "node ./src/cli.mjs eval",
     "evidence": "node ./src/cli.mjs evidence",
     "regressions": "node ./src/cli.mjs regressions",
-    "explain-proof": "node ./src/cli.mjs explain-proof"
+    "explain-proof": "node ./src/cli.mjs explain-proof",
+    "verify": "node ./src/cli.mjs verify"
   },
   "devDependencies": {
     "prettier": "latest"
