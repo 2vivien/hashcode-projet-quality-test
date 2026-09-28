@@ -2,7 +2,7 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 async function loadPlaywright() {
-  try { return await import('playwright'); } catch { return null; }
+  try { return await import('playwright'); } catch { try { return await import('@playwright/test'); } catch { return null; } }
 }
 
 export async function exploreBrowser({ baseUrl, routes = [], roles = [], roleHeaders = {}, outDir, maxPages = 30, maxDepth = 2, timeoutMs = 15000, screenshotAll = false } = {}) {
