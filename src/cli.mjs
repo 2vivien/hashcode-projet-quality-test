@@ -6,6 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { detectStack, PROFILES } from './index.mjs';
 import { executeQuality, loadPrompt, explainRunProof } from './engine/index.mjs';
 import { verifyPersistedRun } from './engine/run-integrity.mjs';
+import { runAutonomousQA } from './agent/index.mjs';
 
 const cwd = process.cwd();
 const args = process.argv.slice(2);
@@ -16,6 +17,37 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 
 function say(data) { console.log(json ? JSON.stringify(data, null, 2) : data); }
 function toolExists(name) { return spawnSync(process.platform === 'win32' ? 'where' : 'which', [name], { stdio: 'ignore' }).status === 0; }
+
+
+function argValue(name, fallback = null) {
+  const i = args.indexOf(name);
+  return i >= 0 ? args[i + 1] : fallback;
+}
+function gitRepository() {
+  const result = spawnSync('git', ['config', '--get', 'remote.origin.url'], { cwd, encoding: 'utf8' });
+  if (result.status !== 0) return null;
+  const raw = result.stdout.trim().replace(/\\.git$/, '');
+  const match = raw.match(/github\\.com[/:]([^/]+\\/[^/]+)$/);
+  return match ? match[1] : null;
+}
+async function agent() {
+  const baseUrl = argValue('--base-url', process.env.HASHCODE_QA_BASE_URL || null);
+  const startCommand = argValue('--start-command', process.env.HASHCODE_QA_START_COMMAND || null);
+  const result = await runAutonomousQA({
+    cwd, baseUrl, startCommand,
+    maxPages: Number(argValue('--max-pages', 30)),
+    maxDepth: Number(argValue('--max-depth', 2)),
+    maxScenarios: Number(argValue('--max-scenarios', 100)),
+    timeoutMs: Number(argValue('--timeout', 15000)),
+    allowMutations: args.includes('--allow-mutations'),
+    openIssues: args.includes('--open-issues'),
+    publishArtifacts: !args.includes('--no-publish-artifacts'),
+    githubRepo: argValue('--repo', gitRepository()),
+    githubBranch: argValue('--branch', 'main')
+  });
+  say(json ? result : 'HASHCODE AUTONOMOUS QA\\nRun: ' + result.runId + '\\nRoutes: ' + result.surface.routes.length + '\\nAPI operations: ' + (result.surface.openapi.length + result.surface.apiRoutes.length) + '\\nScenarios: ' + result.scenarios.length + '\\nPages explored: ' + (result.browser.pages || []).length + '\\nFindings: ' + result.findings.length + '\\nArtifacts: ' + result.artifactDir + '\\nIssues: ' + (result.issues ? result.issues.issues.length : 'not requested'));
+  process.exitCode = result.findings.some(function (f) { return ['HIGH','CRITICAL'].includes(f.severity); }) ? 1 : 0;
+}
 
 function init() {
   const config = `version: 2
@@ -133,6 +165,8 @@ switch (command) {
   case 'doctor': doctor(); break;
   case 'audit': audit(); break;
   case 'check': await check(); break;
+  case 'agent':
+  case 'qa-agent': await agent(); break;
   case 'prove': prove(); break;
   case 'eval': prove(); break;
   case 'evidence': evidence(); break;
@@ -150,6 +184,8 @@ Usage:
   npx hashcode-quality audit [--json]
   npx hashcode-quality check --profile minimal|standard|production|ai [--json]
   npx hashcode-quality check --changed-file=src/foo.ts
+  npx hashcode-quality agent --base-url=http://localhost:3000 [--start-command='npm run dev'] [--open-issues]
+  npx hashcode-quality qa-agent --base-url=http://localhost:3000
   npx hashcode-quality prompt [prompt-file.md]
   npx hashcode-quality prove [--json]
   npx hashcode-quality eval [--json]
