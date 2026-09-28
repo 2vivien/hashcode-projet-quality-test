@@ -37,6 +37,15 @@ export async function probeApi({ baseUrl, endpoints = [], timeoutMs = 10000, all
         bodySample: body.slice(0, 2000)
       };
       requests.push(item);
+      if (endpoint.security && response.status >= 200 && response.status < 300 && Object.keys(headers).length === 0) {
+        findings.push({
+          type: 'AUTHENTICATION_ENFORCEMENT_BYPASS',
+          severity: 'CRITICAL',
+          title: 'Protected API accepted an unauthenticated request: ' + endpoint.method + ' ' + endpoint.path,
+          summary: 'The OpenAPI operation declares security requirements but the anonymous probe received a successful response.',
+          evidence: item
+        });
+      }
       if (response.status >= 500) findings.push({
         type: 'API_SERVER_ERROR',
         severity: 'HIGH',
