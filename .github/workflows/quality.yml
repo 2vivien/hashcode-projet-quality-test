@@ -14,30 +14,34 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-
       - name: Validate package metadata
         run: npm pkg get name version bin exports files engines license
-
       - name: Syntax check
         run: |
           node --check src/index.mjs
           node --check src/cli.mjs
-
+          node --check src/engine/index.mjs
+          node --check src/engine/model.mjs
+          node --check src/engine/config.mjs
+          node --check src/engine/discovery.mjs
+          node --check src/engine/planner.mjs
+          node --check src/engine/runner.mjs
+          node --check src/engine/evaluate.mjs
+      - name: Engine unit tests
+        run: npm test
       - name: CLI smoke test
         run: |
           node src/cli.mjs --help
           node src/cli.mjs doctor --json
           node src/cli.mjs audit --json
-
+          node src/cli.mjs check --profile minimal --json
       - name: Package dry run
         run: npm pack --dry-run
-
       - name: Dependency audit
         run: npm audit --audit-level=high
 
@@ -48,7 +52,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Gitleaks
         uses: gitleaks/gitleaks-action@v2
         continue-on-error: true
