@@ -39,6 +39,8 @@ Requirement
 
 The persisted proof graph is content-addressed with SHA-256.
 
+Before `prove` reports a result, the CLI can verify the persisted graph hash, frozen harness hash and run evidence identity. A tampered persisted run is therefore rejected rather than presented as valid proof.
+
 ## Oracle families
 
 ### Deterministic
