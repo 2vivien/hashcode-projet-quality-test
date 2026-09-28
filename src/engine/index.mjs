@@ -111,7 +111,7 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
     };
   });
   const regressionPlan = buildRegressionPlan({ findings, requirements });
-  const gate = buildGate({ checks, findings, proofAssessments, profile });
+  const gate = buildGate({ checks, findings, proofAssessments, profile, requireHighRiskProof: config.proof?.high_risk_multi_oracle === true });
   const proofGraph = buildProofGraph({ checks, proofAssessments, requirements, findings, gate, harness, gitSha: gitSha(cwd) });
   const finishedAt = new Date().toISOString();
   const result = {
