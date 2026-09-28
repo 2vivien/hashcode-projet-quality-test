@@ -59,3 +59,57 @@ test('semantic evaluator contract is structured and injection resistant', () => 
   const result = normalizeEvaluatorResult({verdict:'PASS',confidence:0.95,supported_claims:['answer'],unsupported_claims:[],missing_requirements:[],reason:'supported'});
   assert.equal(result.verdict, 'PASS');
 });
+
+
+import { buildProofReceipt } from '../src/engine/proof-ledger.mjs';
+
+test('proof receipt explains why a feature is proven and what remains unproven', () => {
+  const receipt = buildProofReceipt({
+    runId: 'run_test',
+    gitSha: 'abc123',
+    requirement: {
+      id: 'auth-login',
+      statement: 'A valid user can log in.',
+      requiredEvidence: ['exitCode']
+    },
+    risk: 'HIGH',
+    oraclePlan: [{
+      type: 'EXACT',
+      criterion: 'command exits successfully',
+      evaluator: 'deterministic',
+      evidenceRequired: ['exitCode']
+    }],
+    oracleResults: [{
+      verdict: 'PASS',
+      confidence: 1,
+      reason: 'Exit code matched expected 0.'
+    }],
+    evidence: [{
+      id: 'ev_1',
+      tool: 'shell',
+      command: 'npm test',
+      exitCode: 0,
+      stdout: 'ok',
+      stderr: '',
+      timestamp: '2026-09-28T00:00:00.000Z'
+    }]
+  });
+
+  assert.equal(receipt.status, 'PROVEN');
+  assert.equal(receipt.verified.length, 1);
+  assert.equal(receipt.data.evidenceIds[0], 'ev_1');
+  assert.equal(receipt.remaining.note.includes('unrelated behavior'), true);
+  assert.match(receipt.proofHash, /^[a-f0-9]{64}$/);
+});
+
+test('proof receipt refuses to overclaim when evidence is missing', () => {
+  const receipt = buildProofReceipt({
+    requirement: { id: 'payment', statement: 'Payment is idempotent.', requiredEvidence: ['databaseState'] },
+    oraclePlan: [{ type: 'INVARIANT', criterion: 'no duplicate charge', evidenceRequired: ['databaseState'] }],
+    oracleResults: [{ verdict: 'PASS', confidence: 1 }],
+    evidence: [{ id: 'ev_2', exitCode: 0 }]
+  });
+
+  assert.equal(receipt.status, 'INSUFFICIENT_PROOF');
+  assert.deepEqual(receipt.remaining.missingEvidence, ['databaseState']);
+});
