@@ -104,7 +104,7 @@ export async function executeQuality({ cwd = process.cwd(), profile = 'standard'
   });
   const regressionPlan = buildRegressionPlan({ findings, requirements });
   const gate = buildGate({ checks, findings, proofAssessments, profile });
-  const proofGraph = buildProofGraph({ checks, proofAssessments, requirements, findings, gate, gitSha: gitSha(cwd) });
+  const proofGraph = buildProofGraph({ checks, proofAssessments, requirements, findings, gate, harness, gitSha: gitSha(cwd) });
   const finishedAt = new Date().toISOString();
   const result = {
     engineVersion: '3.0.0-gold',
