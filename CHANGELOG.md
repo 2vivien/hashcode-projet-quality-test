@@ -4,6 +4,26 @@ Toutes les modifications importantes de HashCode Quality sont documentées dans 
 
 Le format suit l'esprit de Keep a Changelog et les versions suivent Semantic Versioning.
 
+## [3.0.0] - 2026-09-28
+
+### Added
+
+- Proof Engine v3 avec requirements, acceptance criteria, invariants, risques, oracles, evidence, evaluations, proofs, regressions et gate.
+- Frozen evaluation harness avec identité SHA-256 et détection de mutation.
+- Datasets versionnés et adressés par hash.
+- Proof Graph v2 avec hash de graphe et traçabilité complète.
+- Oracle families déterministes, comparatives, property-based, state-machine, concurrency et sémantiques.
+- Proof receipts auditables avec reproductibilité, evidence hashes et gaps explicites.
+- CLI `prove`, `eval`, `evidence`, `regressions` et `explain-proof`.
+- Proof-aware quality gate pour les contrôles à risque élevé/critique.
+- Tests et documentation dédiés au Proof Engine v3.
+
+### Changed
+
+- Distinction explicite entre `PASS` et `PROVEN`.
+- Les preuves insuffisantes ne sont plus transformées en succès implicites.
+- Les evidence requirements sont vérifiées au niveau de chaque oracle.
+
 ## [2.0.0] - 2026-09-18
 
 ### Added
