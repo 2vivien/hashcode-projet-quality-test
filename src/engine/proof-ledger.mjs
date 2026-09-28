@@ -38,14 +38,14 @@ function oracleExplanation(result) {
  * Important: a PASS is never enough by itself. The receipt records:
  * requirement -> oracle -> evidence -> verdict -> confidence -> remaining gaps.
  */
-export function buildProofReceipt({ requirement, risk = 'MEDIUM', oraclePlan = [], oracleResults = [], evidence = [], gitSha = null, runId = null }) {
+export function buildProofReceipt({ requirement, risk = 'MEDIUM', oraclePlan = [], oracleResults = [], evidence = [], gitSha = null, runId = null, proofPolicy = null }) {
   const requiredEvidence = requirement?.requiredEvidence ?? [];
   const availableEvidence = new Set(
     evidence.flatMap(e => e.keys ?? Object.keys(e).filter(k => e !== 'stdout' && e !== 'stderr'))
   );
   const missingEvidence = requiredEvidence.filter(key => !availableEvidence.has(key));
 
-  const oracleReceipts = oraclePlan.map((oracle, index) => {
+  const oracleEvidenceMissing = oraclePlan.map((oracle) => (oracle.evidenceRequired ?? []).filter(key => !availableEvidence.has(key)));\n\n  const oracleReceipts = oraclePlan.map((oracle, index) => {
     const result = oracleResults[index] ?? null;
     return {
       type: oracle.type,
@@ -55,24 +55,33 @@ export function buildProofReceipt({ requirement, risk = 'MEDIUM', oraclePlan = [
       ...oracleExplanation(result),
       verdict: result?.verdict ?? 'NOT_EVALUATED',
       confidence: Number.isFinite(result?.confidence) ? result.confidence : 0,
-      missing: result?.missing ?? []
+      missing: [...new Set([...(result?.missing ?? []), ...(oracleEvidenceMissing[index] ?? [])])]
     };
   });
 
   const failed = oracleReceipts.filter(o => o.verdict === 'FAIL');
   const unresolved = oracleReceipts.filter(o => !['PASS'].includes(o.verdict));
+  const evidenceBlocked = oracleReceipts.filter(o => o.missing.length > 0);
+  const normalizedRisk = String(risk).toUpperCase();
+  const strict = proofPolicy === 'multi_oracle_required' || normalizedRisk === 'CRITICAL';
   let status = PROOF_STATUS.PROVEN;
   let rationale = 'Every planned oracle passed and the required evidence is present.';
 
-  if (missingEvidence.length) {
+  if (missingEvidence.length || evidenceBlocked.length) {
     status = PROOF_STATUS.INSUFFICIENT_PROOF;
-    rationale = 'The requirement cannot be proven because required evidence is missing.';
+    rationale = 'The requirement cannot be proven because required oracle evidence is missing.';
   } else if (!oracleReceipts.length) {
     status = PROOF_STATUS.INSUFFICIENT_PROOF;
     rationale = 'No oracle was executed against the requirement.';
   } else if (failed.length) {
     status = PROOF_STATUS.NOT_PROVEN;
     rationale = 'At least one oracle found that the requirement was not satisfied.';
+  } else if (strict && oracleReceipts.length < 2) {
+    status = PROOF_STATUS.INSUFFICIENT_PROOF;
+    rationale = 'Strict proof policy requires at least two independent proof signals for this risk level.';
+  } else if (strict && new Set(oracleReceipts.map(o => o.type)).size < 2) {
+    status = PROOF_STATUS.INSUFFICIENT_PROOF;
+    rationale = 'Strict proof policy requires independent oracle types.';
   } else if (unresolved.length) {
     status = PROOF_STATUS.INCONCLUSIVE;
     rationale = 'At least one oracle did not produce a passing verdict.';
@@ -97,7 +106,8 @@ export function buildProofReceipt({ requirement, risk = 'MEDIUM', oraclePlan = [
       id: requirement?.id ?? null,
       statement: requirement?.statement ?? '',
       risk,
-      requiredEvidence
+      requiredEvidence,
+      proofPolicy: proofPolicy ?? 'default'
     },
     status,
     rationale,
