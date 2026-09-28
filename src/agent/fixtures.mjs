@@ -11,10 +11,10 @@ function normalizeRole(value, name) {
 
 export function loadAuthorizationFixtures(cwd = process.cwd(), file = DEFAULT_PATH) {
   const path = resolve(cwd, file);
-  if (!existsSync(path)) return { path: null, roles: [], objects: {}, authorization: [], workflows: [], properties: [] };
+  if (!existsSync(path)) return { path: null, roles: [], objects: {}, authorization: [], functionAuthorization: [], workflows: [], properties: [] };
   let data;
   try { data = JSON.parse(readFileSync(path, 'utf8')); }
-  catch (error) { return { path, error: error.message, roles: [], objects: {}, authorization: [], workflows: [], properties: [] }; }
+  catch (error) { return { path, error: error.message, roles: [], objects: {}, authorization: [], functionAuthorization: [], workflows: [], properties: [] }; }
   const roles = Array.isArray(data.roles)
     ? data.roles.map(x => normalizeRole(x))
     : Object.entries(data.roles || {}).map(([name, value]) => normalizeRole(value, name));
@@ -23,6 +23,7 @@ export function loadAuthorizationFixtures(cwd = process.cwd(), file = DEFAULT_PA
     roles,
     objects: data.objects || {},
     authorization: data.authorization || [],
+    functionAuthorization: data.functionAuthorization || [],
     workflows: data.workflows || [],
     properties: data.properties || []
   };
