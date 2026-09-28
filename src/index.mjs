@@ -12,6 +12,7 @@ export { evaluateRepeated, compareDifferential, evaluateMetamorphic, evaluatePro
 export { runAutonomousQA } from './agent/index.mjs';
 export { discoverApplicationSurface, inferRoles } from './agent/route-discovery.mjs';
 export { generateScenarios, prioritizeScenarios } from './agent/scenarios.mjs';
+export { loadAgentConfig } from './agent/config.mjs';
 
 export const PROFILES = {
   minimal: ['lint', 'typecheck', 'unit', 'dependency_hygiene'],
